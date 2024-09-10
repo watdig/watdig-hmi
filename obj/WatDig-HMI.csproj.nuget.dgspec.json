@@ -20,6 +20,7 @@
           "net8.0"
         ],
         "sources": {
+          "/usr/local/share/dotnet/library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -42,6 +43,12 @@
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
+          "dependencies": {
+            "NModbus": {
+              "target": "Package",
+              "version": "[3.0.81, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",

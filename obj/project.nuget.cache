@@ -1,8 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "BzjXo6DzwpY=",
+  "dgSpecHash": "fNGDQs9JLEo=",
   "success": true,
   "projectFilePath": "/Users/adityakumar/WatDig-HMI/WatDig-HMI.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "/Users/adityakumar/.nuget/packages/nmodbus/3.0.81/nmodbus.3.0.81.nupkg.sha512"
+  ],
   "logs": []
 }
