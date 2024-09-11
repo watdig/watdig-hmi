@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WatDig-HMI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9fb918aff5e29063194c9e594001f7e1317f3538")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5cf84048b5d7feaccecda74cc446191a24b1e95f")]
 [assembly: System.Reflection.AssemblyProductAttribute("WatDig-HMI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WatDig-HMI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
