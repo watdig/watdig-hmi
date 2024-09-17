@@ -9,6 +9,7 @@ const Dashboard = () => {
   const [power, setPower] = useState(0);
   const [dcBusVoltage, setDcBusVoltage] = useState(0);
   const [outputVoltage, setOutputVoltage] = useState(0);
+  const [driveTemp, setDriveTemp] = useState(0);
 
   useEffect(() => {
     // Fetch speed data
@@ -53,6 +54,12 @@ const Dashboard = () => {
       setOutputVoltage(response.data.output_voltage);
     };
 
+    //Fetch Drive Temp data
+    const fetchDriveTemp = async () => {
+      const response = await axios.get("/api/data/drive-temp");
+      setOutputVoltage(response.data.drive_temp);
+    };
+
     //Initialize all register values
     fetchSpeed();
     fetchFrequency();
@@ -60,6 +67,8 @@ const Dashboard = () => {
     fetchTorque();
     fetchPower();
     fetchDcBusVoltage();
+    fetchOutputVoltage();
+    fetchDriveTemp();
   }, []);
   return (
     <div>
