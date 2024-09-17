@@ -63,12 +63,12 @@ def drive_temp():
 @app.route('/api/data/drive-cb-temp', methods=['GET'])
 def cb_temp():
     cb_temp = read_register(150)
-    return jsonify({"CB Temp": cb_temp})
+    return jsonify({"Drive CB Temp": cb_temp})
 
 @app.route('/api/data/mot-therm-stress', methods=['GET'])
 def mot_therm_stress():
-    drive_temp = read_register(153)
-    return jsonify({"Mot Therm Stress": drive_temp})
+    mot_therm_stress = read_register(153)
+    return jsonify({"Mot Therm Stress": mot_therm_stress})
 
 
 '''

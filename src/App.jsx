@@ -1,10 +1,10 @@
 import './App.css';
-import Dashboard from './components/Homepage';
+import VitalsDashboard from './components/Homepage';
 
 function App() {
   return (
     <div className="App">
-      <Dashboard />
+      <VitalsDashboard />
     </div>
   );
 }
