@@ -20,7 +20,7 @@ def read_register(register):
 #Range: -30000 - 30000 rpm
 def get_speed_dir():
     speed = read_register(101)
-    return jsonify({"speed & dir": speed})
+    return jsonify({"Speed & Dir": speed})
 
 @app.route('/api/data/output-frequency', methods=['GET'])
 #Range: 0.0 - 500Hz
@@ -47,8 +47,8 @@ def get_power():
 
 @app.route('/api/data/dc-bus-voltage', methods=['GET'])
 def get_dc_bus_voltage():
-    get_dc_bus_voltage = read_register(107)
-    return jsonify({"DC Bus Voltage": get_dc_bus_voltage})
+    dc_bus_voltage = read_register(107)
+    return jsonify({"DC Bus Voltage": dc_bus_voltage})
 
 @app.route('/api/data/output-voltage', methods=['GET'])
 def output_voltage():
