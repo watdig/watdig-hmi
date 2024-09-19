@@ -4,7 +4,7 @@ from pymodbus.client import ModbusSerialClient as ModbusClient
 app = Flask(__name__)
 
 # Modbus client configuration
-client = ModbusClient(port='/dev/tty.SLAB_USBtoUART', baudrate=9600, timeout=1)
+client = ModbusClient(port='/dev/tty.usbserial-0001', baudrate=9600, timeout=10)
 client.connect()
 
 def read_register(register):
@@ -113,8 +113,5 @@ def status_at_fault():
 '''
                     START/STOP/DIR REGISTERS
 '''
-
-
-
 if __name__ == '__main__':
     app.run(debug=True)
