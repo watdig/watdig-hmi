@@ -77,11 +77,7 @@ const DataLogging = () => {
       setFaultData(faultResponse.data);
     } catch (error) {
       console.error('Error fetching data:', error);
-      if (error.response) {
-        console.error('Response error:', error.response.data);
-      } else if (error.request) {
-        console.error('Request error:', error.request);
-      }
+      alert('Failed to fetch data from the database. Please try again later.');
     }
     setIsLoading(false);
   };

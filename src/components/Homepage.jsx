@@ -3,6 +3,8 @@ import GaugeChart from "react-gauge-chart";
 import styled from "styled-components";
 import axios from "axios";
 import DataLogging from './DataLogging';
+import Slider from 'rc-slider';
+import 'rc-slider/assets/index.css';
 
 const NavBar = styled.nav`
   background-color: #333;
@@ -55,9 +57,74 @@ const StyledGaugeChart = styled(GaugeChart)`
   color: "#000000", 
 `;
 
+const ControlPanel = styled.div`
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+`;
+
+const ControlSection = styled.div`
+  margin: 2rem 0;
+`;
+
+const FrequencyDisplay = styled.div`
+  font-size: 2.5rem;
+  font-weight: bold;
+  text-align: center;
+  color: #333;
+  margin: 1rem 0;
+`;
+
+const UnitLabel = styled.span`
+  font-size: 1.5rem;
+  color: #666;
+`;
+
+const ControlButton = styled.button`
+  padding: 0.8rem 1.5rem;
+  margin: 0 0.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &.start {
+    background-color: #4CAF50;
+    color: white;
+    &:hover { background-color: #45a049; }
+  }
+
+  &.stop {
+    background-color: #f44336;
+    color: white;
+    &:hover { background-color: #da190b; }
+  }
+
+  &:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0;
+`;
+
+const ControlRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+`;
+
 const VitalsDashboard = () => {
   const [speed, setSpeed] = useState(0);
   const [frequency, setFrequency] = useState(0);
+  const [oilTemp, setOilTemp] = useState(0);
   const [current, setCurrent] = useState(0);
   const [torque, setTorque] = useState(0);
   const [power, setPower] = useState(0);
@@ -67,25 +134,30 @@ const VitalsDashboard = () => {
   const [driveCbTemp, setDriveCbTemp] = useState(0);
   const [motThermStress, setMotThermStress] = useState(0);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [vfdFrequency, setVfdFrequency] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const [targetFrequency, setTargetFrequency] = useState(0);
+  const [waterPumpFrequency, setWaterPumpFrequency] = useState(0);
+  const [isWaterPumpRunning, setIsWaterPumpRunning] = useState(false);
+  const [targetWaterPumpFrequency, setTargetWaterPumpFrequency] = useState(0);
 
   // Add gauge configurations for different tabs
   const gaugeConfigs = {
-    Hydraulics: [ // Hydraulics
-      { id: 'pressure', label: 'Pressure', value: speed, unit: 'PSI' },
-      { id: 'flow-rate', label: 'Flow Rate', value: frequency, unit: 'GPM' },
-      { id: 'oil-temp', label: 'Oil Temperature', value: current, unit: '°C' },
-      // Add more hydraulic-specific gauges
+    'Hydraulics': [
+      { id: 'pressure', label: 'Pressure', value: speed, unit: 'PSI', maxValue: 5000 },
+      { id: 'flow-rate', label: 'Flow Rate', value: frequency, unit: 'GPM', maxValue: 100 },
+      { id: 'oil-temp', label: 'Oil Temperature', value: oilTemp, unit: '°C', maxValue: 150 },
     ],
-    PowerSystems: [ // Power Systems
-      { id: 'voltage', label: 'Voltage', value: dcBusVoltage, unit: 'V' },
-      { id: 'current', label: 'Current', value: current, unit: 'A' },
-      { id: 'power', label: 'Power', value: power, unit: 'kW' },
-      // Add more power system gauges
+    'Power Systems': [
+      { id: 'voltage', label: 'Voltage', value: dcBusVoltage, unit: 'V', maxValue: 600 },
+      { id: 'current', label: 'Current', value: current, unit: 'A', maxValue: 100 },
+      { id: 'power', label: 'Power', value: power, unit: 'kW', maxValue: 100 },
     ],
-    // ... configure other tabs ...
   };
 
   const renderGauges = () => {
+    console.log('Active Tab:', activeTab);
+    console.log('Available Configs:', Object.keys(gaugeConfigs));
     const currentGauges = gaugeConfigs[activeTab] || [];
     
     return currentGauges.map((gauge) => (
@@ -93,13 +165,47 @@ const VitalsDashboard = () => {
         <StyledGaugeChart
           id={`${gauge.id}-gauge`}
           nrOfLevels={20}
-          percent={gauge.value / 100}
+          percent={Math.min(Math.max(gauge.value / gauge.maxValue, 0), 1)} // Normalize based on maxValue
           arcWidth={0.3}
           colors={["#0000FF", "#00FF00", "#FF0000"]}
+          formatTextValue={() => `${gauge.value} ${gauge.unit}`} // Display actual value with unit
         />
         <GaugeLabel>{gauge.label}: {gauge.value} {gauge.unit}</GaugeLabel>
       </GaugeContainer>
     ));
+  };
+
+  // Add useEffect to simulate some values
+  useEffect(() => {
+    // Simulate some values for testing
+    setDcBusVoltage(480);
+    setCurrent(10.9);
+    setPower(12);
+  }, []);
+
+  // Add this to help debug
+  useEffect(() => {
+    console.log('Tab changed to:', activeTab);
+  }, [activeTab]);
+
+  const handleFrequencyChange = (value, type) => {
+    if (type === 'vfd') {
+      setTargetFrequency(value);
+      setVfdFrequency(value); // Directly set the frequency without animation
+    } else if (type === 'waterPump') {
+      setTargetWaterPumpFrequency(value);
+      setWaterPumpFrequency(value); // Directly set the frequency without animation
+    }
+  };
+
+  const handleStartStop = (type) => {
+    if (type === 'vfd') {
+      setIsRunning(!isRunning);
+      if (!isRunning) setVfdFrequency(targetFrequency); // Set frequency directly
+    } else if (type === 'waterPump') {
+      setIsWaterPumpRunning(!isWaterPumpRunning);
+      if (!isWaterPumpRunning) setWaterPumpFrequency(targetWaterPumpFrequency); // Set frequency directly
+    }
   };
 
   return (
@@ -155,6 +261,89 @@ const VitalsDashboard = () => {
         {renderGauges()}
       </GaugeGrid>
       {activeTab === 'datalogging' && <DataLogging />}
+      {activeTab === 'controls' && (
+        <ControlPanel>
+          <div>
+            <h2>Cutterhead VFD Frequency Control</h2>
+            <ControlSection>
+              <FrequencyDisplay>
+                {vfdFrequency.toFixed(1)} <UnitLabel>Hz</UnitLabel>
+              </FrequencyDisplay>
+              
+              <ButtonGroup>
+                <ControlButton 
+                  className={isRunning ? 'stop' : 'start'}
+                  onClick={() => handleStartStop('vfd')}
+                >
+                  {isRunning ? 'Stop VFD' : 'Start VFD'}
+                </ControlButton>
+              </ButtonGroup>
+
+              <Slider
+                min={0}
+                max={60}
+                step={0.1}
+                value={targetFrequency}
+                onChange={(value) => handleFrequencyChange(value, 'vfd')}
+                railStyle={{ backgroundColor: '#ddd', height: 10 }}
+                trackStyle={{ backgroundColor: '#2196F3', height: 10 }}
+                handleStyle={{
+                  borderColor: '#2196F3',
+                  height: 20,
+                  width: 20,
+                  marginTop: -5,
+                }}
+              />
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+                <span>0 Hz</span>
+                <span>30 Hz</span>
+                <span>60 Hz</span>
+              </div>
+            </ControlSection>
+          </div>
+
+          <div>
+            <h2>Water Pump VFD Frequency Control</h2>
+            <ControlSection>
+              <FrequencyDisplay>
+                {waterPumpFrequency.toFixed(1)} <UnitLabel>Hz</UnitLabel>
+              </FrequencyDisplay>
+              
+              <ButtonGroup>
+                <ControlButton 
+                  className={isWaterPumpRunning ? 'stop' : 'start'}
+                  onClick={() => handleStartStop('waterPump')}
+                >
+                  {isWaterPumpRunning ? 'Stop Water Pump' : 'Start Water Pump'}
+                </ControlButton>
+              </ButtonGroup>
+
+              <Slider
+                min={0}
+                max={60}
+                step={0.1}
+                value={targetWaterPumpFrequency}
+                onChange={(value) => handleFrequencyChange(value, 'waterPump')}
+                railStyle={{ backgroundColor: '#ddd', height: 10 }}
+                trackStyle={{ backgroundColor: '#2196F3', height: 10 }}
+                handleStyle={{
+                  borderColor: '#2196F3',
+                  height: 20,
+                  width: 20,
+                  marginTop: -5,
+                }}
+              />
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+                <span>0 Hz</span>
+                <span>30 Hz</span>
+                <span>60 Hz</span>
+              </div>
+            </ControlSection>
+          </div>
+        </ControlPanel>
+      )}
     </div>
   );
 };
