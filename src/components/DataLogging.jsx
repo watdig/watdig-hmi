@@ -88,8 +88,8 @@ const DataLogging = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const operatingResponse = await axios.get('http://10.0.0.245:8080/api/data/operating');
-      const faultResponse = await axios.get('http://10.0.0.245:8080/api/data/faults');
+      const operatingResponse = await axios.get('http://127.0.0.1:8080/api/data/operating');
+      const faultResponse = await axios.get('http://127.0.0.1:8080/api/data/faults');
       
       setOperatingData(operatingResponse.data);
       setFaultData(faultResponse.data);
