@@ -7,10 +7,15 @@ import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
 
 const NavBar = styled.nav`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   background-color: #333;
   padding: 1rem;
   display: flex;
   justify-content: space-around;
+  z-index: 1000;
 `;
 
 const NavItem = styled.button`
@@ -37,6 +42,7 @@ const GaugeGrid = styled.div`
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
+  padding-top: 80px;
 `;
 
 const GaugeContainer = styled.div`
@@ -254,9 +260,6 @@ const VitalsDashboard = () => {
           Data Logging
         </NavItem>
       </NavBar>
-
-      <h1>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Dashboard</h1>
-      
       <GaugeGrid>
         {renderGauges()}
       </GaugeGrid>

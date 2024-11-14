@@ -48,6 +48,7 @@ class Database:
         conn.close()
 
     def log_operating_data(self, data):
+        print("Logging operating data:", data)  # Debugging line
         conn = sqlite3.connect(self.db_file)
         cursor = conn.cursor()
         
@@ -124,40 +125,22 @@ class Database:
         conn.close()
         return data 
 
-from database import Database
+if __name__ == "__main__":
+    # Create database instance
+    db = Database()
 
-# Create database instance
-db = Database()
+    # Example of logging operating data
+    sample_data = {
+        'speed_rpm': 1500,
+        'output_frequency': 3,
+        'current_amps': 10,
+        'torque_percent': 75,
+        'power_kw': 5,
+        'dc_bus_voltage': 4,
+        'output_voltage': 460,
+        'drive_temp_c': 40,
+        'drive_cb_temp_c': 35,
+        'motor_thermal_stress_percent': 60
+    }
 
-# Example of logging operating data
-sample_data = {
-    'speed_rpm': 1500,
-    'output_frequency': 60,
-    'current_amps': 10,
-    'torque_percent': 75,
-    'power_kw': 5,
-    'dc_bus_voltage': 480,
-    'output_voltage': 460,
-    'drive_temp_c': 40,
-    'drive_cb_temp_c': 35,
-    'motor_thermal_stress_percent': 50
-}
-
-db.log_operating_data(sample_data)
-
-
-
-# Connect to the database
-conn = sqlite3.connect('modbus_logs.db')
-cursor = conn.cursor()
-
-# Get column names
-cursor.execute("PRAGMA table_info(operating_data)")
-columns = [col[1] for col in cursor.fetchall()]
-
-# Get all records
-cursor.execute("SELECT * FROM operating_data")
-all_records = cursor.fetchall()
-
-# Print as formatted table
-print(tabulate(all_records, headers=columns, tablefmt="grid"))
+    db.log_operating_data(sample_data)
