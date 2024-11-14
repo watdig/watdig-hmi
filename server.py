@@ -6,8 +6,12 @@ import time
 import sys
 import glob
 import serial
+from database import Database
+import sqlite3
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
@@ -285,12 +289,69 @@ def health_check():
             "message": f"Modbus connection error: {str(e)}"
         }), 503
 
+db = Database()
+
+@app.route('/api/data/operating', methods=['GET'])
+def get_operating_data():
+    try:
+        conn = sqlite3.connect('modbus_logs.db')
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT timestamp, speed_rpm, output_frequency, current_amps,
+                   torque_percent, power_kw, dc_bus_voltage, output_voltage,
+                   drive_temp_c, drive_cb_temp_c, motor_thermal_stress_percent
+            FROM operating_data 
+            ORDER BY timestamp DESC 
+            LIMIT 100
+        ''')
+        
+        columns = ['timestamp', 'speed_rpm', 'output_frequency', 'current_amps',
+                  'torque_percent', 'power_kw', 'dc_bus_voltage', 'output_voltage',
+                  'drive_temp_c', 'drive_cb_temp_c', 'motor_thermal_stress_percent']
+        
+        rows = cursor.fetchall()
+        result = [dict(zip(columns, row)) for row in rows]
+        
+        conn.close()
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error fetching operating data: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/data/faults', methods=['GET'])
+def get_fault_data():
+    try:
+        conn = sqlite3.connect('modbus_logs.db')
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT timestamp, fault_code, speed_at_fault, frequency_at_fault,
+                   voltage_at_fault, current_at_fault, torque_at_fault, status_at_fault
+            FROM fault_history 
+            ORDER BY timestamp DESC 
+            LIMIT 50
+        ''')
+        
+        columns = ['timestamp', 'fault_code', 'speed_at_fault', 'frequency_at_fault',
+                  'voltage_at_fault', 'current_at_fault', 'torque_at_fault', 'status_at_fault']
+        
+        rows = cursor.fetchall()
+        result = [dict(zip(columns, row)) for row in rows]
+        
+        conn.close()
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error fetching fault data: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
-    # Add startup message
+    '''# Add startup message
     logger.info("Starting Modbus Flask API...")
     logger.info(f"Using port: {modbus.port}")
-    logger.info(f"Baudrate: {modbus.baudrate}")
+    logger.info(f"Baudrate: {modbus.baudrate}")'''
     
     # Start Flask app
-    app.run(debug=False, use_reloader=False, host='0.0.0.0', port=6000)
-    startup_sequence()
+    app.run(debug=False, use_reloader=False, host='0.0.0.0', port=8080)

@@ -44,7 +44,6 @@ def check_vfd_registers():
         if result.isError():
             logger.error(f"Error writing register 0x9802")
         else:
-            value = result.registers[0]
             logger.info(f"Success")
         
         # Registers to read

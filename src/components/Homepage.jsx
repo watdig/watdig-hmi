@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import GaugeChart from "react-gauge-chart";
 import styled from "styled-components";
 import axios from "axios";
+import DataLogging from './DataLogging';
 
 const NavBar = styled.nav`
   background-color: #333;
@@ -140,6 +141,12 @@ const VitalsDashboard = () => {
         >
           Controls
         </NavItem>
+        <NavItem 
+          className={activeTab === 'datalogging' ? 'active' : ''} 
+          onClick={() => setActiveTab('datalogging')}
+        >
+          Data Logging
+        </NavItem>
       </NavBar>
 
       <h1>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Dashboard</h1>
@@ -147,6 +154,7 @@ const VitalsDashboard = () => {
       <GaugeGrid>
         {renderGauges()}
       </GaugeGrid>
+      {activeTab === 'datalogging' && <DataLogging />}
     </div>
   );
 };
