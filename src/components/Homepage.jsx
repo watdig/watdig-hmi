@@ -3,6 +3,57 @@ import GaugeChart from "react-gauge-chart";
 import styled from "styled-components";
 import axios from "axios";
 
+const NavBar = styled.nav`
+  background-color: #333;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-around;
+`;
+
+const NavItem = styled.button`
+  background: none;
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 1.1rem;
+  
+  &:hover {
+    background-color: #444;
+  }
+  
+  &.active {
+    border-bottom: 2px solid #fff;
+  }
+`;
+
+const GaugeGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+`;
+
+const GaugeContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+`;
+
+const GaugeLabel = styled.p`
+  margin-top: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+`;
+
+const StyledGaugeChart = styled(GaugeChart)`
+  fontSize: "18px", 
+  color: "#000000", 
+`;
+
 const VitalsDashboard = () => {
   const [speed, setSpeed] = useState(0);
   const [frequency, setFrequency] = useState(0);
@@ -14,117 +65,88 @@ const VitalsDashboard = () => {
   const [driveTemp, setDriveTemp] = useState(0);
   const [driveCbTemp, setDriveCbTemp] = useState(0);
   const [motThermStress, setMotThermStress] = useState(0);
+  const [activeTab, setActiveTab] = useState('dashboard');
 
-  const GaugeContainer = styled.div`
-    marginLeft: "20px",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    width: "200px", 
-    height: "200px", 
-  `;
+  // Add gauge configurations for different tabs
+  const gaugeConfigs = {
+    Hydraulics: [ // Hydraulics
+      { id: 'pressure', label: 'Pressure', value: speed, unit: 'PSI' },
+      { id: 'flow-rate', label: 'Flow Rate', value: frequency, unit: 'GPM' },
+      { id: 'oil-temp', label: 'Oil Temperature', value: current, unit: '°C' },
+      // Add more hydraulic-specific gauges
+    ],
+    PowerSystems: [ // Power Systems
+      { id: 'voltage', label: 'Voltage', value: dcBusVoltage, unit: 'V' },
+      { id: 'current', label: 'Current', value: current, unit: 'A' },
+      { id: 'power', label: 'Power', value: power, unit: 'kW' },
+      // Add more power system gauges
+    ],
+    // ... configure other tabs ...
+  };
 
-  const StyledGaugeChart = styled(GaugeChart)`
-    fontSize: "18px", 
-    color: "#000000", 
-  `;
+  const renderGauges = () => {
+    const currentGauges = gaugeConfigs[activeTab] || [];
+    
+    return currentGauges.map((gauge) => (
+      <GaugeContainer key={gauge.id}>
+        <StyledGaugeChart
+          id={`${gauge.id}-gauge`}
+          nrOfLevels={20}
+          percent={gauge.value / 100}
+          arcWidth={0.3}
+          colors={["#0000FF", "#00FF00", "#FF0000"]}
+        />
+        <GaugeLabel>{gauge.label}: {gauge.value} {gauge.unit}</GaugeLabel>
+      </GaugeContainer>
+    ));
+  };
 
-  //COMMENTED OUT UNTILL VFD CAN FEED INTO PROGRAM
-  /*
-  useEffect(() => {
-    // Fetch speed data
-    const fetchSpeed = async () => {
-      const response = await axios.get("/api/data/speed-dir");
-      setSpeed(response.data.speed);
-    };
-
-    // Fetch frequency data
-    const fetchFrequency = async () => {
-      const response = await axios.get("/api/data/output-frequency");
-      setFrequency(response.data.frequency);
-    };
-
-    // Fetch current data
-    const fetchCurrent = async () => {
-      const response = await axios.get("/api/data/current");
-      setCurrent(response.data.current);
-    };
-
-    // Fetch torque data
-    const fetchTorque = async () => {
-      const response = await axios.get("/api/data/torque");
-      setTorque(response.data.torque);
-    };
-
-    // Fetch power data
-    const fetchPower = async () => {
-      const response = await axios.get("/api/data/power");
-      setPower(response.data.power);
-    };
-
-    //Fetch DC Bus Voltage data
-    const fetchDcBusVoltage = async () => {
-      const response = await axios.get("/api/data/dc-bus-voltage");
-      setDcBusVoltage(response.data.dc_bus_voltage);
-    };
-
-    //Fetch Drive Temp Data
-    const fetchOutputVoltage = async () => {
-      const response = await axios.get("/api/data/output-voltage");
-      setOutputVoltage(response.data.output_voltage);
-    };
-
-    //Fetch Drive Temp data
-    const fetchDriveTemp = async () => {
-      const response = await axios.get("/api/data/drive-temp");
-      setDriveTemp(response.data.drive_temp);
-    };
-
-    // Fetch CB Temp data
-    const fetchDriveCbTemp = async () => {
-      const response = await axios.get("/api/data/drive-cb-temp");
-      setDriveCbTemp(response.data.cb_temp);
-    };
-
-    // Fetch Mot Therm Stress data
-    const fetchMotThermStress = async () => {
-      const response = await axios.get("/api/data/mot-therm-stress");
-      setMotThermStress(response.data.mot_therm_stress);
-    };
-
-    //Initialize all register values
-    fetchSpeed();
-    fetchFrequency();
-    fetchCurrent();
-    fetchTorque();
-    fetchPower();
-    fetchDcBusVoltage();
-    fetchOutputVoltage();
-    fetchDriveTemp();
-    fetchDriveCbTemp();
-    fetchMotThermStress();
-  }, []);
-  */
   return (
     <div>
-      <h1>VFD Dashboard</h1>
-      <div>
-        <h2>Live Data</h2>
-        <GaugeContainer>
-          <StyledGaugeChart
-            id="gauge-chart"
-            nrOfLevels={20}
-            percent={10 / 100}
-            arcWidth={0.3}
-            colors={["#0000FF", "#00FF00", "#FF0000"]} // Customize colors
-          />
-        </GaugeContainer>
-        <p>Current: {50} A</p>
-      </div>
-      <div>
-        <h2>Controls</h2>
-        {/* Controlling options */}
-      </div>
+      <NavBar>
+        <NavItem 
+          className={activeTab === 'Hydraulics' ? 'active' : ''} 
+          onClick={() => setActiveTab('Hydraulics')}
+        >
+          Hydraulics
+        </NavItem>
+        <NavItem 
+          className={activeTab === 'Power Systems' ? 'active' : ''} 
+          onClick={() => setActiveTab('Power Systems')}
+        >
+          Power Systems
+        </NavItem>
+        <NavItem 
+          className={activeTab === 'settings' ? 'active' : ''} 
+          onClick={() => setActiveTab('settings')}
+        >
+          Erosion
+        </NavItem>
+        <NavItem 
+          className={activeTab === 'alarms' ? 'active' : ''} 
+          onClick={() => setActiveTab('alarms')}
+        >
+          Tunnel Lining
+        </NavItem>
+        <NavItem 
+          className={activeTab === 'history' ? 'active' : ''} 
+          onClick={() => setActiveTab('history')}
+        >
+          Propulsion
+        </NavItem>
+        <NavItem 
+          className={activeTab === 'controls' ? 'active' : ''} 
+          onClick={() => setActiveTab('controls')}
+        >
+          Controls
+        </NavItem>
+      </NavBar>
+
+      <h1>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Dashboard</h1>
+      
+      <GaugeGrid>
+        {renderGauges()}
+      </GaugeGrid>
     </div>
   );
 };

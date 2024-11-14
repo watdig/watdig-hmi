@@ -65,14 +65,19 @@ class ModbusConnection:
 
     def read_register(self, register):
         try:
+            # Ensure the Modbus client is connected
             if not self.client or not self.client.is_socket_open():
                 if not self.connect():
                     raise Exception("Failed to reconnect to Modbus device")
 
+            # Read holding register
             result = self.client.read_holding_registers(register, 1, unit=1)
+
+            # Check for errors
             if result.isError():
                 raise Exception(f"Modbus error reading register {register}")
 
+            # Return the first register value
             return result.registers[0]
 
         except Exception as e:
@@ -82,6 +87,38 @@ class ModbusConnection:
 # Create global Modbus connection instance
 modbus = ModbusConnection()
 
+@app.route('/api/startup-sequence', methods=['POST'])
+def startup_sequence():
+    """Initiate the startup sequence for ABB ACS550"""
+    
+    # Step 1: Send a specific register write to enable motor start command (adjust register and value as needed)
+    logger.info("Starting ABB ACS550 motor startup sequence...")
+
+    # Register address (example, you need to check with the ACS550 documentation)
+    START_COMMAND_REGISTER = 101  # Example register for startŒ command
+    START_COMMAND_VALUE = 1       # Value to send to start the motor (check the specific value required)
+
+    # Write the start command to the register
+    modbus.write_single_register(START_COMMAND_REGISTER, START_COMMAND_VALUE)
+
+    # Step 2: Optionally, confirm that the motor has started (checking relevant register for status)
+    status_register = 102  # Example register for motor status
+    motor_status = modbus.read_register(status_register)
+
+    # Check if motor status indicates it's running (adjust as per ACS550)
+    if motor_status == 1:
+        logger.info("Motor started successfully")
+        return jsonify({
+            "status": "success",
+            "message": "Motor started successfully"
+        })
+    else:
+        logger.error("Failed to start motor")
+        return jsonify({
+            "status": "failure",
+            "message": "Motor failed to start"
+        }), 500
+    
 def handle_modbus_errors(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
@@ -247,10 +284,6 @@ def health_check():
             "status": "unhealthy",
             "message": f"Modbus connection error: {str(e)}"
         }), 503
-def log_cb_temp():
-    while True:
-        logger.info(f"Info: {get_cb_temp()}")
-        time.sleep(5)  # Log every 5 seconds or as needed
 
 if __name__ == '__main__':
     # Add startup message
@@ -260,4 +293,4 @@ if __name__ == '__main__':
     
     # Start Flask app
     app.run(debug=False, use_reloader=False, host='0.0.0.0', port=6000)
-    logger.info(f"Info: {get_cb_temp()}")
+    startup_sequence()
