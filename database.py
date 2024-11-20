@@ -131,7 +131,7 @@ if __name__ == "__main__":
 
     # Example of logging operating data
     sample_data = {
-        'speed_rpm': 1500,
+        'speed_rpm': 100,
         'output_frequency': 3,
         'current_amps': 10,
         'torque_percent': 75,

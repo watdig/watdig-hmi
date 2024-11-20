@@ -1,154 +1,152 @@
+from flask import Flask, jsonify
 from pymodbus.client import ModbusSerialClient as ModbusClient
 import logging
+from functools import wraps
+import time
+import sys
+import glob
+import serial
+from database import Database
+import sqlite3
+from flask_cors import CORS
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+CORS()
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
-# Connection parameters
-PORT = '/dev/tty.SLAB_USBtoUART'
-BAUDRATE = 9600
-PARITY = 'N'
-UNIT_ID = 1
+class ModbusConnection:
+    def __init__(self, port='/dev/tty.SLAB_USBtoUART', baudrate=9600, timeout=5):
+        # Initialize the Modbus connection parameters
+        self.port = port  # Serial port to connect to
+        self.baudrate = baudrate  # Baud rate for the connection
+        self.timeout = timeout  # Timeout for the connection
+        self.client = None  # Placeholder for the Modbus client
+        self.connect()  # Attempt to connect to the Modbus device upon initialization
 
-# Motor Speed Control Parameters
-MOT_NOM_SPEED = 1000  # Nominal motor speed (in RPM)
-MOT_NOM_FREQ = 60   # Nominal motor frequency (in Hz)
-
-from pymodbus.client import ModbusSerialClient as ModbusClient
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Connection parameters
-PORT = '/dev/tty.SLAB_USBtoUART'
-BAUDRATE = 9600
-PARITY = 'N'
-UNIT_ID = 1
-
-def configure_vfd(client):
-    try:
-        # Set serial communication protocol to Modbus (parameter 9802)
-        serial_comm_protocol = 4  # 1 for Standard Modbus
-        client.write_register(9802, serial_comm_protocol, UNIT_ID)  # Modbus register 9802
-        logger.info("Serial communication set to Modbus.")
-
-        # Set EXT1 commands for start/stop control (parameter 1001)
-        ext1_command_value = 10  # Value for COMM (fieldbus control)
-        client.write_register(1001, ext1_command_value, UNIT_ID)  # Modbus register 1001
-        logger.info("EXT1 command set for start/stop control.")
-
-        # Set EXT2 commands for start/stop control (parameter 1002)
-        ext2_command_value = 10  # Value for COMM (fieldbus control)
-        client.write_register(1002, ext2_command_value, UNIT_ID)  # Modbus register 1002
-        logger.info("EXT2 command set for start/stop control.")
-
-        # Set direction control (parameter 1003)
-        direction_request_value = 3  # Value for REQUEST (fieldbus control)
-        client.write_register(1003, direction_request_value, UNIT_ID)  # Modbus register 1003
-        logger.info("Direction control set for fieldbus.")
-
-        # Set input reference selection EXT1/EXT2 (parameter 1102)
-        ref_select_value = 8  # 8 for COMM (fieldbus input reference)
-        client.write_register(1102, ref_select_value, UNIT_ID)  # Modbus register 1102
-        logger.info("Input reference EXT1/EXT2 selected for fieldbus.")
-
-        # Set REF1 selection for fieldbus input (parameter 1103)
-        ref1_select_value = 8  # 8 for COMM (fieldbus input reference)
-        client.write_register(1103, ref1_select_value, UNIT_ID)  # Modbus register 1103
-        logger.info("REF1 input reference set for fieldbus.")
-
-        # Set REF2 selection for fieldbus input (parameter 1106)
-        ref2_select_value = 8  # 8 for COMM (fieldbus input reference)
-        client.write_register(1106, ref2_select_value, UNIT_ID)  # Modbus register 1106
-        logger.info("REF2 input reference set for fieldbus.")
+    def connect(self):
+        # Method to establish a connection to the Modbus device
+        retry_count = 0  # Counter for connection attempts
+        max_retries = 3  # Maximum number of retries for connection
         
-    except Exception as e:
-        logger.error(f"Error configuring VFD parameters: {e}")
+        while retry_count < max_retries:
+            try:
+                # Check if the client is already connected and close it if so
+                if self.client and self.client.is_socket_open():
+                    self.client.close()
 
-def connect_to_vfd():
-    client = ModbusClient(
-        port=PORT,
-        baudrate=BAUDRATE,
-        parity=PARITY,
-        stopbits=1,
-        bytesize=8,
-        timeout=1
-    )
+                # Initialize the Modbus client with the specified parameters
+                self.client = ModbusClient(
+                    port=self.port,
+                    baudrate=self.baudrate,
+                    timeout=self.timeout
+                )
 
-    if client.connect():
-        logger.info("Successfully connected to the VFD!")
-        configure_vfd(client)  # Set drive parameters before starting
-    else:
-        logger.error("Failed to connect to the VFD.")
-    
-    client.close()
+                # Attempt to connect to the Modbus device
+                if self.client.connect():
+                    logger.info(f"Successfully connected to Modbus device on {self.port}")
+                    return True  # Return True if connection is successful
+                else:
+                    # Raise an exception if the connection fails
+                    raise serial.serialutil.SerialException(f"Failed to open port {self.port}")
 
-'''if __name__ == "__main__":
-    connect_to_vfd()'''
+            except serial.serialutil.SerialException as e:
+                # Handle specific serial exceptions
+                if "Resource temporarily unavailable" in str(e):
+                    logger.warning(f"Port {self.port} is temporarily unavailable, retrying...")
+                else:
+                    logger.error(f"Serial exception on connection attempt {retry_count + 1}: {str(e)}")
+                    
+                retry_count += 1  # Increment the retry count
+                time.sleep(1)  # Wait for a second before retrying
 
+            except Exception as e:
+                # Handle any other exceptions that may occur
+                logger.error(f"Connection attempt {retry_count + 1} failed: {str(e)}")
+                retry_count += 1  # Increment the retry count
+                time.sleep(1)  # Wait before the next retry
+                
+        logger.error("Failed to connect after maximum retries")  # Log failure after max retries
+        return False  # Return False if connection fails after retries
 
-def start_motor(client):
-        # Enable "run enable by fieldbus" (bit 3 of register 40001)
-    RUN_ENABLE_FIELD_BUS = 0b00001000  # Bit 3 set to 1 (binary 1000)
-    client.write_register(40001, RUN_ENABLE_FIELD_BUS, UNIT_ID)
-        
-        # Enable "start enable" (bit 2 of register 40032) for Start Enable 1
-    START_ENABLE_1 = 0b00000100  # Bit 2 set to 1 (binary 100)
-    client.write_register(40032, START_ENABLE_1, UNIT_ID)
-        
-        # Enable "start enable" (bit 3 of register 40032) for Start Enable 2
-    START_ENABLE_2 = 0b00001000  # Bit 3 set to 1 (binary 1000)
-    client.write_register(40032, START_ENABLE_2, UNIT_ID)
+    def read_register(self, register):
+        # Method to read a value from a specified Modbus register
+        try:
+            # Ensure the Modbus client is connected before reading
+            if not self.client or not self.client.is_socket_open():
+                if not self.connect():  # Attempt to reconnect if not connected
+                    raise Exception("Failed to reconnect to Modbus device")
 
+            # Read the specified holding register
+            result = self.client.read_holding_registers(register, 1)
 
+            # Check for errors in the result
+            if result.isError():
+                raise Exception(f"Modbus error reading register {register}")
 
-def set_motor_speed(client, speed_rpm):
-    """
-    Set motor speed by writing to the appropriate frequency register.
-    """
-        # For example, if you need to set the speed based on frequency:
-    speed_register = 40103  # FREQ OUTPUT register (frequency in Hz)
-        
-        # Convert RPM to frequency (this will depend on your system)
-        # For example: 1 RPM = 1 Hz (simple case, adjust for your system)
-    frequency_hz = MOT_NOM_FREQ  # Assuming 1 RPM = 1 Hz, adjust if needed
-        
-        # Write to frequency output register
-    client.write_register(speed_register, frequency_hz)
+            # Return the first value from the result (register value)
+            return result.registers[0]
 
+        except Exception as e:
+            # Log any errors that occur during the read operation
+            logger.error(f"Error reading register {register}: {str(e)}")
+            raise  # Re-raise the exception for further handling
 
-def connect_to_vfd():
-    client = ModbusClient(
-        port=PORT,
-        baudrate=BAUDRATE,
-        parity=PARITY,
-        stopbits=1,
-        bytesize=8,
-        timeout=1
-    )
+    def write_register(self, register, value):
+        # Method to write a value to a specified Modbus register
+        try:
+            # Ensure the Modbus client is connected before writing
+            if not self.client or not self.client.is_socket_open():
+                if not self.connect():  # Attempt to reconnect if not connected
+                    raise Exception("Failed to reconnect to Modbus device")
 
-    if client.connect():
-        logger.info("Successfully connected to the VFD!")
-        configure_vfd(client)  # Set drive parameters before starting
-        start_motor(client)
-        
-        # Set motor speed to 1500 RPM (example)
-        set_motor_speed(client, 1500)
-    else:
-        logger.error("Failed to connect to the VFD.")
-    
-    client.close()
+            # Write the specified value to the holding register
+            result = self.client.write_register(register, value)
 
-if __name__ == "__main__":
-    connect_to_vfd()
-    start_motor(client = ModbusClient(
-        port=PORT,
-        baudrate=BAUDRATE,
-        parity=PARITY,
-        stopbits=1,
-        bytesize=8,
-        timeout=1
-    ))
+            # Check for errors in the result
+            if result.isError():
+                raise Exception(f"Modbus error writing to register {register}")
+
+            # Log successful write operation
+            logger.info(f"Successfully wrote value {value} to register {register}")
+
+        except Exception as e:
+            # Log any errors that occur during the write operation
+            logger.error(f"Error writing to register {register}: {str(e)}")
+            raise  # Re-raise the exception
+
+modbus = ModbusConnection()
+def test_startup_sequence():
+    modbus.write_register(1, 20000)
+    #print(f"Register value (binary): {bin(modbus.read_register(3))}")
+    modbus.write_register(0, 0b110)
+    #print(f"Register value (binary): {bin(modbus.read_register(3))}")
+    time.sleep(0.1)
+    modbus.write_register(0, 0b111)
+    #print(f"Register value (binary): {bin(modbus.read_register(3))}")
+    modbus.write_register(0, 0b1111)
+    #print(f"Register value (binary): {bin(modbus.read_register(3))}")
+    modbus.write_register(0, 0b101111)
+    #print(f"Register value (binary): {bin(modbus.read_register(3))}")
+    modbus.write_register(0, 0b1101111)
+    while True:
+        print(bin(modbus.read_register(4210)))
+    #print(bin(modbus.read_register(3)))
+    #print(f"Register value (binary): {bin(modbus.read_register(3))}")
+    #time.sleep(5)
+    #print(f"Register value (binary): {bin(modbus.read_register(3))}")
+    '''print(f"Register value (binary): {bin(modbus.read_register(0))}")
+    time.sleep(1)
+    print(f"Register value (binary): {bin(modbus.read_register(5318))}")
+
+    print(f"Register value (binary): {bin(modbus.read_register(3))}")
+    time.sleep(1)
+    print(f"Register value (binary): {bin(modbus.read_register(5319))}")'''
+
+if __name__ == '__main__':
+    # Start Flask app
+    #app.run(use_reloader=False, host='0.0.0.0', port=8080)
+    #startup_sequence()
+    test_startup_sequence()

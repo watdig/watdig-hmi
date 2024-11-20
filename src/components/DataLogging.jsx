@@ -83,7 +83,7 @@ const DataLogging = () => {
   const [manualRefresh, setManualRefresh] = useState(false);
   const [filters, setFilters] = useState({});
   const [sortConfig, setSortConfig] = useState({ key: '', direction: 'ascending' });
-  const [rowLimit, setRowLimit] = useState(10); // Default number of rows to display
+  const [rowLimit, setRowLimit] = useState(10); // Default to ten rows
 
   const fetchData = async () => {
     setIsLoading(true);

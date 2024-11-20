@@ -9,6 +9,7 @@ import serial
 from database import Database
 import sqlite3
 from flask_cors import CORS
+import threading
 
 app = Flask(__name__)
 CORS(app)
@@ -18,110 +19,146 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+
+
 class ModbusConnection:
-    def __init__(self, port='/dev/tty.MEGADUCK3', baudrate=9600, timeout=30):
-        self.port = port
-        self.baudrate = baudrate
-        self.timeout = timeout
-        self.client = None
-        self.connect()
+    def __init__(self, port='/dev/tty.SLAB_USBtoUART', baudrate=9600, timeout=5):
+        # Initialize the Modbus connection parameters
+        self.port = port  # Serial port to connect to
+        self.baudrate = baudrate  # Baud rate for the connection
+        self.timeout = timeout  # Timeout for the connection
+        self.client = None  # Placeholder for the Modbus client
+        self.connect()  # Attempt to connect to the Modbus device upon initialization
 
     def connect(self):
-        retry_count = 0
-        max_retries = 3
+        # Method to establish a connection to the Modbus device
+        retry_count = 0  # Counter for connection attempts
+        max_retries = 3  # Maximum number of retries for connection
         
         while retry_count < max_retries:
             try:
-                # Check and close if already connected
+                # Check if the client is already connected and close it if so
                 if self.client and self.client.is_socket_open():
                     self.client.close()
 
-                # Initialize client and attempt connection
+                # Initialize the Modbus client with the specified parameters
                 self.client = ModbusClient(
                     port=self.port,
                     baudrate=self.baudrate,
                     timeout=self.timeout
                 )
 
-                # Attempt connection
+                # Attempt to connect to the Modbus device
                 if self.client.connect():
                     logger.info(f"Successfully connected to Modbus device on {self.port}")
-                    return True
+                    return True  # Return True if connection is successful
                 else:
+                    # Raise an exception if the connection fails
                     raise serial.serialutil.SerialException(f"Failed to open port {self.port}")
 
             except serial.serialutil.SerialException as e:
+                # Handle specific serial exceptions
                 if "Resource temporarily unavailable" in str(e):
                     logger.warning(f"Port {self.port} is temporarily unavailable, retrying...")
                 else:
                     logger.error(f"Serial exception on connection attempt {retry_count + 1}: {str(e)}")
                     
-                retry_count += 1
-                time.sleep(1)  # wait before retrying
+                retry_count += 1  # Increment the retry count
+                time.sleep(1)  # Wait for a second before retrying
 
             except Exception as e:
+                # Handle any other exceptions that may occur
                 logger.error(f"Connection attempt {retry_count + 1} failed: {str(e)}")
-                retry_count += 1
-                time.sleep(1)
+                retry_count += 1  # Increment the retry count
+                time.sleep(1)  # Wait before the next retry
                 
-        logger.error("Failed to connect after maximum retries")
-        return False
+        logger.error("Failed to connect after maximum retries")  # Log failure after max retries
+        return False  # Return False if connection fails after retries
 
     def read_register(self, register):
+        # Method to read a value from a specified Modbus register
         try:
-            # Ensure the Modbus client is connected
+            # Ensure the Modbus client is connected before reading
             if not self.client or not self.client.is_socket_open():
-                if not self.connect():
+                if not self.connect():  # Attempt to reconnect if not connected
                     raise Exception("Failed to reconnect to Modbus device")
 
-            # Read holding register
-            result = self.client.read_holding_registers(register, 1, unit=1)
+            # Read the specified holding register
+            result = self.client.read_holding_registers(register, 1)
 
-            # Check for errors
+            # Check for errors in the result
             if result.isError():
                 raise Exception(f"Modbus error reading register {register}")
 
-            # Return the first register value
+            # Return the first value from the result (register value)
             return result.registers[0]
 
         except Exception as e:
+            # Log any errors that occur during the read operation
             logger.error(f"Error reading register {register}: {str(e)}")
-            raise
+            raise  # Re-raise the exception for further handling
+
+    def write_register(self, register, value):
+        # Method to write a value to a specified Modbus register
+        try:
+            # Ensure the Modbus client is connected before writing
+            if not self.client or not self.client.is_socket_open():
+                if not self.connect():  # Attempt to reconnect if not connected
+                    raise Exception("Failed to reconnect to Modbus device")
+
+            # Write the specified value to the holding register
+            result = self.client.write_register(register, value)
+
+            # Check for errors in the result
+            if result.isError():
+                raise Exception(f"Modbus error writing to register {register}")
+
+            # Log successful write operation
+            logger.info(f"Successfully wrote value {value} to register {register}")
+
+        except Exception as e:
+            # Log any errors that occur during the write operation
+            logger.error(f"Error writing to register {register}: {str(e)}")
+            raise  # Re-raise the exception for further handling
 
 # Create global Modbus connection instance
 modbus = ModbusConnection()
 
-@app.route('/api/startup-sequence', methods=['POST'])
+def test_startup_sequence():
+    n = 0
+    modbus.write_register(1, 20000)
+    modbus.write_register(0, 0b110)
+    time.sleep(0.1)
+    modbus.write_register(0, 0b111)
+    modbus.write_register(0, 0b1111)
+    modbus.write_register(0, 0b101111)
+    modbus.write_register(0, 0b1101111)
+    while n < 300:
+        print(bin(modbus.read_register(3)))
+        time.sleep(0.1)
+        n += 1
+    modbus.write_register(0, 0b1101110)
+    while True:
+        print(bin(modbus.read_register(3)))
+
+
+@app.route('/api/startup-sequence', methods=['GET'])
 def startup_sequence():
-    """Initiate the startup sequence for ABB ACS550"""
+    modbus.write_register(1, 10)
+    print(f"Register value (binary): {bin(modbus.read_register(1))}")
+    modbus.write_register(0, 0b110)
+    print(f"Register value (binary): {bin(modbus.read_register(3))}")
+    time.sleep(0.1)
+    modbus.write_register(0, 0b111)
+    print(f"Register value (binary): {bin(modbus.read_register(3))}")
+    modbus.write_register(0, 0b1111)
+    print(f"Register value (binary): {bin(modbus.read_register(3))}")
+    modbus.write_register(0, 0b101111)
+    print(f"Register value (binary): {bin(modbus.read_register(3))}")
+    modbus.write_register(0, 0b1101111)
+    print(f"Register value (binary): {bin(modbus.read_register(3))}")
     
-    # Step 1: Send a specific register write to enable motor start command (adjust register and value as needed)
-    logger.info("Starting ABB ACS550 motor startup sequence...")
-
-    # Register address (example, you need to check with the ACS550 documentation)
-    START_COMMAND_REGISTER = 101  # Example register for startŒ command
-    START_COMMAND_VALUE = 1       # Value to send to start the motor (check the specific value required)
-
-    # Write the start command to the register
-    modbus.write_single_register(START_COMMAND_REGISTER, START_COMMAND_VALUE)
-
-    # Step 2: Optionally, confirm that the motor has started (checking relevant register for status)
-    status_register = 102  # Example register for motor status
-    motor_status = modbus.read_register(status_register)
-
-    # Check if motor status indicates it's running (adjust as per ACS550)
-    if motor_status == 1:
-        logger.info("Motor started successfully")
-        return jsonify({
-            "status": "success",
-            "message": "Motor started successfully"
-        })
-    else:
-        logger.error("Failed to start motor")
-        return jsonify({
-            "status": "failure",
-            "message": "Motor failed to start"
-        }), 500
     
 def handle_modbus_errors(f):
     @wraps(f)
@@ -348,11 +385,12 @@ def get_fault_data():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    '''# Add startup message
-    logger.info("Starting Modbus Flask API...")
-    logger.info(f"Using port: {modbus.port}")
-    logger.info(f"Baudrate: {modbus.baudrate}")'''
-    
+    # Start the test startup sequence in a separate thread
+    test_thread = threading.Thread(target=test_startup_sequence)
+    test_thread.start()  # Start the thread
+
     # Start Flask app
     app.run(use_reloader=False, host='0.0.0.0', port=8080)
-    get_operating_data()
+
+    # Optionally, wait for the test thread to finish
+    test_thread.join()
