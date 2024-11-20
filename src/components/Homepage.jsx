@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import GaugeChart from "react-gauge-chart";
 import styled from "styled-components";
 import axios from "axios";
@@ -194,20 +194,34 @@ const VitalsDashboard = () => {
     console.log('Tab changed to:', activeTab);
   }, [activeTab]);
 
-  const handleFrequencyChange = (value, type) => {
+  const handleFrequencyChange = async (value, type) => {
     if (type === 'vfd') {
       setTargetFrequency(value);
       setVfdFrequency(value); // Directly set the frequency without animation
+      // Send the frequency to the server
+      try {
+        await axios.post('http://127.0.0.1:8080/api/set-frequency', { frequency: value * 333.33 }); // Convert Hz to register value
+      } catch (error) {
+        console.error("Error setting frequency:", error);
+      }
     } else if (type === 'waterPump') {
       setTargetWaterPumpFrequency(value);
       setWaterPumpFrequency(value); // Directly set the frequency without animation
     }
   };
 
-  const handleStartStop = (type) => {
+  const handleStartStop = async (type) => {
     if (type === 'vfd') {
+      if (!isRunning) {
+        // Start the VFD by calling the API
+        try {
+          await axios.get('http://127.0.0.1:8080/api/startup-sequence'); // Call the startup_sequence API
+          setVfdFrequency(targetFrequency); // Set frequency directly
+        } catch (error) {
+          console.error("Error starting VFD:", error);
+        }
+      }
       setIsRunning(!isRunning);
-      if (!isRunning) setVfdFrequency(targetFrequency); // Set frequency directly
     } else if (type === 'waterPump') {
       setIsWaterPumpRunning(!isWaterPumpRunning);
       if (!isWaterPumpRunning) setWaterPumpFrequency(targetWaterPumpFrequency); // Set frequency directly

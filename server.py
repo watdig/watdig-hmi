@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from pymodbus.client import ModbusSerialClient as ModbusClient
 import logging
 from functools import wraps
@@ -145,19 +145,17 @@ def test_startup_sequence():
 
 @app.route('/api/startup-sequence', methods=['GET'])
 def startup_sequence():
-    modbus.write_register(1, 10)
-    print(f"Register value (binary): {bin(modbus.read_register(1))}")
+    modbus.write_register(1, 20000)
     modbus.write_register(0, 0b110)
-    print(f"Register value (binary): {bin(modbus.read_register(3))}")
     time.sleep(0.1)
     modbus.write_register(0, 0b111)
-    print(f"Register value (binary): {bin(modbus.read_register(3))}")
     modbus.write_register(0, 0b1111)
-    print(f"Register value (binary): {bin(modbus.read_register(3))}")
     modbus.write_register(0, 0b101111)
-    print(f"Register value (binary): {bin(modbus.read_register(3))}")
     modbus.write_register(0, 0b1101111)
-    print(f"Register value (binary): {bin(modbus.read_register(3))}")
+    while True:
+        modbus.read_register(3)
+        time.sleep(0.1)
+        n += 1
     
     
 def handle_modbus_errors(f):
@@ -190,70 +188,70 @@ OPERATING DATA REGISTERS
 @handle_modbus_errors
 def get_speed_dir():
     """Get motor speed and direction (-30000 to 30000 rpm)"""
-    speed = modbus.read_register(101)
+    speed = modbus.read_register(100)
     return format_response(speed, "Speed & Direction", "rpm")
 
 @app.route('/api/data/output-frequency', methods=['GET'])
 @handle_modbus_errors
 def get_output_freq():
     """Get output frequency (0.0 - 500Hz)"""
-    frequency = modbus.read_register(103)
+    frequency = modbus.read_register(102)
     return format_response(frequency, "Output Frequency", "Hz", 0.1)
 
 @app.route('/api/data/current', methods=['GET'])
 @handle_modbus_errors
 def get_current():
     """Get current (0.0 - 2.0 * I2hd)"""
-    current = modbus.read_register(104)
+    current = modbus.read_register(103)
     return format_response(current, "Current", "A", 0.1)
 
 @app.route('/api/data/torque', methods=['GET'])
 @handle_modbus_errors
 def get_torque():
     """Get torque (-200 to 200%)"""
-    torque = modbus.read_register(105)
+    torque = modbus.read_register(104)
     return format_response(torque, "Torque", "%")
 
 @app.route('/api/data/power', methods=['GET'])
 @handle_modbus_errors
 def get_power():
     """Get power output"""
-    power = modbus.read_register(106)
+    power = modbus.read_register(105)
     return format_response(power, "Power", "kW", 0.1)
 
 @app.route('/api/data/dc-bus-voltage', methods=['GET'])
 @handle_modbus_errors
 def get_dc_bus_voltage():
     """Get DC bus voltage"""
-    dc_bus_voltage = modbus.read_register(107)
+    dc_bus_voltage = modbus.read_register(106)
     return format_response(dc_bus_voltage, "DC Bus Voltage", "V")
 
 @app.route('/api/data/output-voltage', methods=['GET'])
 @handle_modbus_errors
 def get_output_voltage():
     """Get output voltage"""
-    output_voltage = modbus.read_register(109)
+    output_voltage = modbus.read_register(108)
     return format_response(output_voltage, "Output Voltage", "V")
 
 @app.route('/api/data/drive-temp', methods=['GET'])
 @handle_modbus_errors
 def get_drive_temp():
     """Get drive temperature"""
-    drive_temp = modbus.read_register(110)
+    drive_temp = modbus.read_register(109)
     return format_response(drive_temp, "Drive Temperature", "°C")
 
 @app.route('/api/data/drive-cb-temp', methods=['GET'])
 @handle_modbus_errors
 def get_cb_temp():
     """Get drive control board temperature"""
-    cb_temp = modbus.read_register(150)
+    cb_temp = modbus.read_register(149)
     return format_response(cb_temp, "Drive CB Temperature", "°C")
 
 @app.route('/api/data/mot-therm-stress', methods=['GET'])
 @handle_modbus_errors
 def get_mot_therm_stress():
     """Get motor thermal stress level"""
-    mot_therm_stress = modbus.read_register(153)
+    mot_therm_stress = modbus.read_register(152)
     return format_response(mot_therm_stress, "Motor Thermal Stress", "%")
 
 '''
@@ -339,8 +337,7 @@ def get_operating_data():
                    torque_percent, power_kw, dc_bus_voltage, output_voltage,
                    drive_temp_c, drive_cb_temp_c, motor_thermal_stress_percent
             FROM operating_data 
-            ORDER BY timestamp DESC 
-            LIMIT 100
+            ORDER BY timestamp DESC;
         ''')
         
         columns = ['timestamp', 'speed_rpm', 'output_frequency', 'current_amps',
@@ -367,8 +364,7 @@ def get_fault_data():
             SELECT timestamp, fault_code, speed_at_fault, frequency_at_fault,
                    voltage_at_fault, current_at_fault, torque_at_fault, status_at_fault
             FROM fault_history 
-            ORDER BY timestamp DESC 
-            LIMIT 50
+            ORDER BY timestamp DESC;
         ''')
         
         columns = ['timestamp', 'fault_code', 'speed_at_fault', 'frequency_at_fault',
@@ -384,13 +380,30 @@ def get_fault_data():
         print(f"Error fetching fault data: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/set-frequency', methods=['POST'])
+def set_frequency():
+    """Set the VFD frequency based on the provided value"""
+    data = request.get_json()
+    frequency = data.get('frequency', 0)
+    
+    # Ensure frequency is within the valid range
+    if 0 <= frequency <= 20000:  # Assuming 20000 corresponds to 60 Hz
+        try:
+            modbus.write_register(1, frequency)  # Write the frequency to the register
+            return jsonify({"status": "success", "message": "Frequency set successfully"}), 200
+        except Exception as e:
+            logger.error(f"Error writing frequency: {str(e)}")
+            return jsonify({"status": "error", "message": str(e)}), 500
+    else:
+        return jsonify({"status": "error", "message": "Frequency out of range"}), 400
+
 if __name__ == '__main__':
     # Start the test startup sequence in a separate thread
-    test_thread = threading.Thread(target=test_startup_sequence)
-    test_thread.start()  # Start the thread
+    '''test_thread = threading.Thread(target=test_startup_sequence)
+    test_thread.start()'''  # Start the thread
 
     # Start Flask app
     app.run(use_reloader=False, host='0.0.0.0', port=8080)
 
     # Optionally, wait for the test thread to finish
-    test_thread.join()
+    '''test_thread.join()'''

@@ -83,7 +83,7 @@ const DataLogging = () => {
   const [manualRefresh, setManualRefresh] = useState(false);
   const [filters, setFilters] = useState({});
   const [sortConfig, setSortConfig] = useState({ key: '', direction: 'ascending' });
-  const [rowLimit, setRowLimit] = useState(10); // Default to ten rows
+  const [rowLimit, setRowLimit] = useState(250); // Default to ten rows
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -106,7 +106,7 @@ const DataLogging = () => {
 
     const intervalId = setInterval(() => {
       fetchData(); // Fetch data every 5 seconds
-    }, 5000); // Adjust the interval as needed
+    }, 250); // Adjust the interval as needed
 
     return () => clearInterval(intervalId); // Clear interval on component unmount
   }, []);
