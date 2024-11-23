@@ -156,6 +156,10 @@ def startup_sequence():
 def stop_motor():
     modbus.write_register(0, 0)
 
+@app.route('/api/reverse-motor', methods=['GET'])
+def reverse_motor():
+    modbus.write_register(0, 0)
+
 @app.route('/api/set-frequency', methods=['POST'])
 def set_frequency():
     """Set the VFD frequency based on the provided value"""
@@ -170,7 +174,7 @@ def set_frequency():
         
         # Convert to integer and ensure it's within valid range
         frequency = int(frequency)
-        if 0 <= frequency <= 20000:  # 0 to 20000 (0 to 60 Hz)
+        if -20000 <= frequency <= 20000:  # Allow negative values for reverse
             try:
                 modbus.write_register(1, frequency)
                 logger.info(f"Successfully set frequency to {frequency} ({(frequency * 60/20000):.1f} Hz)")
@@ -188,7 +192,7 @@ def set_frequency():
         else:
             return jsonify({
                 "status": "error",
-                "message": f"Frequency value {frequency} is out of range (0-20000)"
+                "message": f"Frequency value {frequency} is out of range (-20000 to 20000)"
             }), 400
             
     except Exception as e:
@@ -197,6 +201,49 @@ def set_frequency():
             "status": "error",
             "message": str(e)
         }), 500
+
+@app.route('/api/revese-frequency', methods=['POST'])
+def reverse_frequency():
+    """Set the VFD frequency based on the provided value"""
+    try:
+        data = request.get_json()
+        if data is None:
+            return jsonify({"status": "error", "message": "No JSON data received"}), 400
+        
+        frequency = data.get('frequency')
+        if frequency is None:
+            return jsonify({"status": "error", "message": "No frequency value provided"}), 400
+        
+        # Convert to integer and ensure it's within valid range
+        frequency = int(frequency)
+        if -20000 <= frequency <= 20000:  # Allow negative values for reverse
+            try:
+                modbus.write_register(1, frequency)
+                logger.info(f"Successfully set frequency to {frequency} ({(frequency * 60/20000):.1f} Hz)")
+                return jsonify({
+                    "status": "success",
+                    "message": "Frequency set successfully",
+                    "value": frequency
+                }), 200
+            except Exception as e:
+                logger.error(f"Modbus error writing frequency: {str(e)}")
+                return jsonify({
+                    "status": "error",
+                    "message": f"Modbus error: {str(e)}"
+                }), 500
+        else:
+            return jsonify({
+                "status": "error",
+                "message": f"Frequency value {frequency} is out of range (-20000 to 20000)"
+            }), 400
+            
+    except Exception as e:
+        logger.error(f"Error in set_frequency: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
 
 def handle_modbus_errors(f):
     @wraps(f)
@@ -422,11 +469,11 @@ def get_fault_data():
 
 if __name__ == '__main__':
     # Start the test startup sequence in a separate thread
-    '''test_thread = threading.Thread(target=test_startup_sequence)
-    test_thread.start()'''  # Start the thread
+    #test_thread = threading.Thread(target=test_startup_sequence)
+    #test_thread.start()  # Start the thread
 
     # Start Flask app
     app.run(use_reloader=False, host='0.0.0.0', port=8080)
 
     # Optionally, wait for the test thread to finish
-    '''test_thread.join()'''
+    #test_thread.join()

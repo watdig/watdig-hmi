@@ -149,17 +149,41 @@ const VitalsDashboard = () => {
 
   // Add gauge configurations for different tabs
   const gaugeConfigs = {
-    'Hydraulics': [
-      { id: 'pressure', label: 'Pressure', value: speed, unit: 'PSI', maxValue: 5000 },
+    'Cutter Face VFD': [
+      { id: 'speed', label: 'Speed', value: speed, unit: 'RPM', maxValue: 2000 },
       { id: 'flow-rate', label: 'Flow Rate', value: frequency, unit: 'GPM', maxValue: 100 },
       { id: 'oil-temp', label: 'Oil Temperature', value: oilTemp, unit: '°C', maxValue: 150 },
     ],
-    'Power Systems': [
+    'Water Pump VFD': [
       { id: 'voltage', label: 'Voltage', value: dcBusVoltage, unit: 'V', maxValue: 600 },
       { id: 'current', label: 'Current', value: current, unit: 'A', maxValue: 100 },
       { id: 'power', label: 'Power', value: power, unit: 'kW', maxValue: 100 },
     ],
   };
+
+  // Function to fetch speed from the API
+  const fetchSpeed = async () => {
+    try {
+      const response = await axios.get('http://127.0.0.1:8080/api/data/speed-dir'); // Adjust the endpoint as necessary
+      console.log("API Response for Speed:", response.data); // Log the response
+      if (response.data && response.data["Speed & Direction"] && response.data["Speed & Direction"].value) {
+        setSpeed(response.data["Speed & Direction"].value); // Update speed state
+      } else {
+        console.warn("Speed value not found in response:", response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching speed:", error);
+    }
+  };
+
+  // useEffect to fetch speed data at regular intervals
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchSpeed();
+    }, 2000); // Fetch speed every 2 seconds
+
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, []);
 
   const renderGauges = () => {
     console.log('Active Tab:', activeTab);
@@ -250,6 +274,24 @@ const VitalsDashboard = () => {
     }
   };
 
+  // Function to reverse the motor
+  const handleReverseMotor = async () => {
+    try {
+      // Set the frequency to a negative value (e.g., -targetFrequency)
+      const registerValue = Math.round(-targetFrequency * (20000 / 60)); // Convert to register value
+      console.log(registerValue)
+      await axios.post('http://127.0.0.1:8080/api/reverse-frequency', {
+        frequency: registerValue
+      });
+      console.log(`Sent reverse frequency value: ${registerValue} (${-targetFrequency} Hz)`);
+    } catch (error) {
+      console.error("Error reversing motor:", error);
+      if (error.response) {
+        console.error("Error details:", error.response.data);
+      }
+    }
+  };
+
   // useEffect to log the motor frequency whenever it changes
   useEffect(() => {
     console.log('Motor Frequency changed:', vfdFrequency);
@@ -259,34 +301,28 @@ const VitalsDashboard = () => {
     <div>
       <NavBar>
         <NavItem 
-          className={activeTab === 'Hydraulics' ? 'active' : ''} 
-          onClick={() => setActiveTab('Hydraulics')}
+          className={activeTab === 'Cutter Face VFD' ? 'active' : ''} 
+          onClick={() => setActiveTab('Cutter Face VFD')}
         >
-          Hydraulics
+          Cutter Face VFD
         </NavItem>
         <NavItem 
-          className={activeTab === 'Power Systems' ? 'active' : ''} 
-          onClick={() => setActiveTab('Power Systems')}
+          className={activeTab === 'Water Pump VFD' ? 'active' : ''} 
+          onClick={() => setActiveTab('Water Pump VFD')}
         >
-          Power Systems
+          Water Pump VFD
         </NavItem>
         <NavItem 
-          className={activeTab === 'settings' ? 'active' : ''} 
-          onClick={() => setActiveTab('settings')}
+          className={activeTab === 'Above Ground Board' ? 'active' : ''} 
+          onClick={() => setActiveTab('Above Ground Board')}
         >
-          Erosion
+          Above Ground Board
         </NavItem>
         <NavItem 
-          className={activeTab === 'alarms' ? 'active' : ''} 
-          onClick={() => setActiveTab('alarms')}
+          className={activeTab === 'Below Ground Board' ? 'active' : ''} 
+          onClick={() => setActiveTab('Below Ground Board')}
         >
-          Tunnel Lining
-        </NavItem>
-        <NavItem 
-          className={activeTab === 'history' ? 'active' : ''} 
-          onClick={() => setActiveTab('history')}
-        >
-          Propulsion
+          Below Ground Board
         </NavItem>
         <NavItem 
           className={activeTab === 'controls' ? 'active' : ''} 
@@ -326,6 +362,12 @@ const VitalsDashboard = () => {
                   onClick={handleStopMotor} // Call the stop motor handler
                 >
                   Stop Motor
+                </ControlButton>
+                <ControlButton 
+                  className="stop"
+                  onClick={handleReverseMotor} // Call the reverse motor handler
+                >
+                  Reverse Motor
                 </ControlButton>
               </ButtonGroup>
 
