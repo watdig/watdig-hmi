@@ -151,28 +151,53 @@ def startup_sequence():
     modbus.write_register(0, 0b1111)
     modbus.write_register(0, 0b101111)
     modbus.write_register(0, 0b1101111)
-    while modbus.read_register(0) == 0b1101111:
-        modbus.read_register(3)
-        time.sleep(2)
+
+@app.route('/api/stop-motor', methods=['GET'])
+def stop_motor():
+    modbus.write_register(0, 0)
 
 @app.route('/api/set-frequency', methods=['POST'])
 def set_frequency():
     """Set the VFD frequency based on the provided value"""
-    data = request.get_json()
-    frequency = data.get('frequency', 0)
-    
-    # Ensure frequency is within the valid range
-    if 0 <= frequency <= 20000:  # Assuming 20000 corresponds to 60 Hz
-        try:
-            modbus.write_register(1, frequency)  # Write the frequency to the register
-            return jsonify({"status": "success", "message": "Frequency set successfully"}), 200
-        except Exception as e:
-            logger.error(f"Error writing frequency: {str(e)}")
-            return jsonify({"status": "error", "message": str(e)}), 500
-    else:
-        return jsonify({"status": "error", "message": "Frequency out of range"}), 400
-    
-    
+    try:
+        data = request.get_json()
+        if data is None:
+            return jsonify({"status": "error", "message": "No JSON data received"}), 400
+        
+        frequency = data.get('frequency')
+        if frequency is None:
+            return jsonify({"status": "error", "message": "No frequency value provided"}), 400
+        
+        # Convert to integer and ensure it's within valid range
+        frequency = int(frequency)
+        if 0 <= frequency <= 20000:  # 0 to 20000 (0 to 60 Hz)
+            try:
+                modbus.write_register(1, frequency)
+                logger.info(f"Successfully set frequency to {frequency} ({(frequency * 60/20000):.1f} Hz)")
+                return jsonify({
+                    "status": "success",
+                    "message": "Frequency set successfully",
+                    "value": frequency
+                }), 200
+            except Exception as e:
+                logger.error(f"Modbus error writing frequency: {str(e)}")
+                return jsonify({
+                    "status": "error",
+                    "message": f"Modbus error: {str(e)}"
+                }), 500
+        else:
+            return jsonify({
+                "status": "error",
+                "message": f"Frequency value {frequency} is out of range (0-20000)"
+            }), 400
+            
+    except Exception as e:
+        logger.error(f"Error in set_frequency: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
 def handle_modbus_errors(f):
     @wraps(f)
     def wrapper(*args, **kwargs):

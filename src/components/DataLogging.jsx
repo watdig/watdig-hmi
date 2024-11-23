@@ -106,7 +106,7 @@ const DataLogging = () => {
 
     const intervalId = setInterval(() => {
       fetchData(); // Fetch data every 5 seconds
-    }, 250); // Adjust the interval as needed
+    }, 5000); // Adjust the interval as needed
 
     return () => clearInterval(intervalId); // Clear interval on component unmount
   }, []);

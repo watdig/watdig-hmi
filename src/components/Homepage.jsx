@@ -196,37 +196,64 @@ const VitalsDashboard = () => {
 
   const handleFrequencyChange = async (value, type) => {
     if (type === 'vfd') {
-      setTargetFrequency(value);
-      setVfdFrequency(value); // Directly set the frequency without animation
-      // Send the frequency to the server
-      try {
-        await axios.post('http://127.0.0.1:8080/api/set-frequency', { frequency: value * 333.33 }); // Convert Hz to register value
-      } catch (error) {
-        console.error("Error setting frequency:", error);
-      }
+        setTargetFrequency(value);
+        setVfdFrequency(value); // Update display value
+        
+        // Calculate register value (60Hz = 20000)
+        const registerValue = Math.round(value * (20000/60));
+        
+        try {
+            await axios.post('http://127.0.0.1:8080/api/set-frequency', {
+                frequency: registerValue
+            });
+            console.log(`Sent frequency value: ${registerValue} (${value} Hz)`);
+        } catch (error) {
+            console.error("Error setting frequency:", error);
+            if (error.response) {
+                console.error("Error details:", error.response.data);
+            }
+        }
     } else if (type === 'waterPump') {
-      setTargetWaterPumpFrequency(value);
-      setWaterPumpFrequency(value); // Directly set the frequency without animation
+        setTargetWaterPumpFrequency(value);
+        setWaterPumpFrequency(value);
     }
   };
 
   const handleStartStop = async (type) => {
     if (type === 'vfd') {
-      if (!isRunning) {
-        // Start the VFD by calling the API
-        try {
-          await axios.get('http://127.0.0.1:8080/api/startup-sequence'); // Call the startup_sequence API
-          setVfdFrequency(targetFrequency); // Set frequency directly
-        } catch (error) {
-          console.error("Error starting VFD:", error);
+        if (!isRunning) {
+            // Start the VFD by calling the API
+            try {
+                await axios.get('http://127.0.0.1:8080/api/startup-sequence'); // Call the startup_sequence API
+                setVfdFrequency(targetFrequency); // Set frequency directly
+                
+                // Call the set frequency API after starting the VFD
+                await axios.post('http://127.0.0.1:8080/api/set-frequency', { frequency: targetFrequency * 333.33 }); // Convert Hz to register value
+            } catch (error) {
+                console.error("Error starting VFD:", error);
+            }
         }
-      }
-      setIsRunning(!isRunning);
+        setIsRunning(!isRunning);
     } else if (type === 'waterPump') {
-      setIsWaterPumpRunning(!isWaterPumpRunning);
-      if (!isWaterPumpRunning) setWaterPumpFrequency(targetWaterPumpFrequency); // Set frequency directly
+        setIsWaterPumpRunning(!isWaterPumpRunning);
+        if (!isWaterPumpRunning) setWaterPumpFrequency(targetWaterPumpFrequency); // Set frequency directly
     }
   };
+
+  const handleStopMotor = async () => {
+    try {
+      await axios.get('http://127.0.0.1:8080/api/stop-motor'); // Call the stop_motor API
+      setIsRunning(false); // Update the running state
+      setVfdFrequency(0); // Optionally reset the frequency display
+    } catch (error) {
+      console.error("Error stopping motor:", error);
+    }
+  };
+
+  // useEffect to log the motor frequency whenever it changes
+  useEffect(() => {
+    console.log('Motor Frequency changed:', vfdFrequency);
+  }, [vfdFrequency]); // Dependency array includes vfdFrequency
 
   return (
     <div>
@@ -293,6 +320,12 @@ const VitalsDashboard = () => {
                   onClick={() => handleStartStop('vfd')}
                 >
                   {isRunning ? 'Stop VFD' : 'Start VFD'}
+                </ControlButton>
+                <ControlButton 
+                  className="stop"
+                  onClick={handleStopMotor} // Call the stop motor handler
+                >
+                  Stop Motor
                 </ControlButton>
               </ButtonGroup>
 

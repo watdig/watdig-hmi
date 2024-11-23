@@ -1,6 +1,5 @@
-import asyncio
-import aiohttp
 import time
+import requests
 import sqlite3
 from database import Database
 
@@ -21,41 +20,46 @@ API_ENDPOINTS = {
     "mot_therm_stress": "http://127.0.0.1:8080/api/data/mot-therm-stress",
 }
 
-async def fetch_data(session, endpoint):
-    async with session.get(endpoint) as response:
-        if response.status == 200:
-            return await response.json()
+def fetch_data(endpoint):
+    try:
+        response = requests.get(endpoint)
+        if response.status_code == 200:
+            return response.json()
         else:
+            print(f"Error fetching data from {endpoint}: {response.status_code}")
             return None
+    except Exception as e:
+        print(f"Exception occurred while fetching data from {endpoint}: {str(e)}")
+        return None
 
-async def poll_data():
-    async with aiohttp.ClientSession() as session:
-        while True:
-            tasks = [fetch_data(session, endpoint) for endpoint in API_ENDPOINTS.values()]
-            results = await asyncio.gather(*tasks)
+def poll_data():
+    while True:
+        results = {}
+        for key, endpoint in API_ENDPOINTS.items():
+            results[key] = fetch_data(endpoint)
 
-            # Prepare data for logging
-            data_to_log = {
-                "speed_rpm": results[0].get("Speed & Direction", {}).get("value"),
-                "output_frequency": results[1].get("Output Frequency", {}).get("value"),
-                "current_amps": results[2].get("Current", {}).get("value"),
-                "torque_percent": results[3].get("Torque", {}).get("value"),
-                "power_kw": results[4].get("Power", {}).get("value"),
-                "dc_bus_voltage": results[5].get("DC Bus Voltage", {}).get("value"),
-                "output_voltage": results[6].get("Output Voltage", {}).get("value"),
-                "drive_temp_c": results[7].get("Drive Temperature", {}).get("value"),
-                "drive_cb_temp_c": results[8].get("Drive CB Temperature", {}).get("value"),
-                "motor_thermal_stress_percent": results[9].get("Motor Thermal Stress", {}).get("value"),
-            }
+        # Prepare data for logging
+        data_to_log = {
+            "speed_rpm": results["speed_dir"].get("Speed & Direction", {}).get("value"),
+            "output_frequency": results["output_frequency"].get("Output Frequency", {}).get("value"),
+            "current_amps": results["current"].get("Current", {}).get("value"),
+            "torque_percent": results["torque"].get("Torque", {}).get("value"),
+            "power_kw": results["power"].get("Power", {}).get("value"),
+            "dc_bus_voltage": results["dc_bus_voltage"].get("DC Bus Voltage", {}).get("value"),
+            "output_voltage": results["output_voltage"].get("Output Voltage", {}).get("value"),
+            "drive_temp_c": results["drive_temp"].get("Drive Temperature", {}).get("value"),
+            "drive_cb_temp_c": results["drive_cb_temp"].get("Drive CB Temperature", {}).get("value"),
+            "motor_thermal_stress_percent": results["mot_therm_stress"].get("Motor Thermal Stress", {}).get("value"),
+        }
 
-            # Log the data into the database
-            db.log_operating_data(data_to_log)
+        # Log the data into the database
+        db.log_operating_data(data_to_log)
 
-            # Wait for 0.1 seconds before the next poll
-            await asyncio.sleep(0.1)
+        # Wait for 0.1 seconds before the next poll
+        time.sleep(2)
 
 if __name__ == "__main__":
     try:
-        asyncio.run(poll_data())
+        poll_data()
     except KeyboardInterrupt:
         print("Polling stopped.") 

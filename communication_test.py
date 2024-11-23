@@ -237,7 +237,7 @@ class ModbusConnection:
 
 modbus = ModbusConnection()
 def test_startup_sequence():
-    modbus.write_register(0, 0)
+    '''modbus.write_register(0, 0)
     #print(f"Register value (binary): {bin(modbus.read_register(3))}")
     modbus.write_register(0, 0b110)
     #print(f"Register value (binary): {bin(modbus.read_register(3))}")
@@ -254,7 +254,8 @@ def test_startup_sequence():
     modbus.write_register(0, 0)
     while modbus.read_register(0) == 0b1101111:
         modbus.read_register(0)
-        time.sleep(0.5)
+        time.sleep(0.5)'''
+    modbus.write_register(0, 0)
     print(modbus.read_register(0))
 
 if __name__ == '__main__':
