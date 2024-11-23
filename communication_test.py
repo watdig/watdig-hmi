@@ -237,7 +237,7 @@ class ModbusConnection:
 
 modbus = ModbusConnection()
 def test_startup_sequence():
-    '''modbus.write_register(1, 20000)
+    modbus.write_register(0, 0)
     #print(f"Register value (binary): {bin(modbus.read_register(3))}")
     modbus.write_register(0, 0b110)
     #print(f"Register value (binary): {bin(modbus.read_register(3))}")
@@ -248,23 +248,17 @@ def test_startup_sequence():
     #print(f"Register value (binary): {bin(modbus.read_register(3))}")
     modbus.write_register(0, 0b101111)
     #print(f"Register value (binary): {bin(modbus.read_register(3))}")
-    modbus.write_register(0, 0b1101111)'''
+    modbus.write_register(0, 0b1101111)
     modbus.write_register(1, 20000)
-    #print(bin(modbus.read_register(3)))
-    #print(f"Register value (binary): {bin(modbus.read_register(3))}")
-    #time.sleep(5)
-    #print(f"Register value (binary): {bin(modbus.read_register(3))}")
-    '''print(f"Register value (binary): {bin(modbus.read_register(0))}")
-    time.sleep(1)
-    print(f"Register value (binary): {bin(modbus.read_register(5318))}")
-
-    print(f"Register value (binary): {bin(modbus.read_register(3))}")
-    time.sleep(1)
-    print(f"Register value (binary): {bin(modbus.read_register(5319))}")'''
+    time.sleep(4)
+    modbus.write_register(0, 0)
+    while modbus.read_register(0) == 0b1101111:
+        modbus.read_register(0)
+        time.sleep(0.5)
+    print(modbus.read_register(0))
 
 if __name__ == '__main__':
     # Start Flask app
     #app.run(use_reloader=False, host='0.0.0.0', port=8080)
     #startup_sequence()
-    while True:
-        test_startup_sequence()
+    test_startup_sequence()

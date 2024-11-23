@@ -145,17 +145,32 @@ def test_startup_sequence():
 
 @app.route('/api/startup-sequence', methods=['GET'])
 def startup_sequence():
-    modbus.write_register(1, 20000)
     modbus.write_register(0, 0b110)
     time.sleep(0.1)
     modbus.write_register(0, 0b111)
     modbus.write_register(0, 0b1111)
     modbus.write_register(0, 0b101111)
     modbus.write_register(0, 0b1101111)
-    while True:
+    while modbus.read_register(0) == 0b1101111:
         modbus.read_register(3)
-        time.sleep(0.1)
-        n += 1
+        time.sleep(2)
+
+@app.route('/api/set-frequency', methods=['POST'])
+def set_frequency():
+    """Set the VFD frequency based on the provided value"""
+    data = request.get_json()
+    frequency = data.get('frequency', 0)
+    
+    # Ensure frequency is within the valid range
+    if 0 <= frequency <= 20000:  # Assuming 20000 corresponds to 60 Hz
+        try:
+            modbus.write_register(1, frequency)  # Write the frequency to the register
+            return jsonify({"status": "success", "message": "Frequency set successfully"}), 200
+        except Exception as e:
+            logger.error(f"Error writing frequency: {str(e)}")
+            return jsonify({"status": "error", "message": str(e)}), 500
+    else:
+        return jsonify({"status": "error", "message": "Frequency out of range"}), 400
     
     
 def handle_modbus_errors(f):
@@ -379,23 +394,6 @@ def get_fault_data():
     except Exception as e:
         print(f"Error fetching fault data: {str(e)}")
         return jsonify({'error': str(e)}), 500
-
-@app.route('/api/set-frequency', methods=['POST'])
-def set_frequency():
-    """Set the VFD frequency based on the provided value"""
-    data = request.get_json()
-    frequency = data.get('frequency', 0)
-    
-    # Ensure frequency is within the valid range
-    if 0 <= frequency <= 20000:  # Assuming 20000 corresponds to 60 Hz
-        try:
-            modbus.write_register(1, frequency)  # Write the frequency to the register
-            return jsonify({"status": "success", "message": "Frequency set successfully"}), 200
-        except Exception as e:
-            logger.error(f"Error writing frequency: {str(e)}")
-            return jsonify({"status": "error", "message": str(e)}), 500
-    else:
-        return jsonify({"status": "error", "message": "Frequency out of range"}), 400
 
 if __name__ == '__main__':
     # Start the test startup sequence in a separate thread
