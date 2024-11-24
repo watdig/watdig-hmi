@@ -43,8 +43,8 @@ angle = 45  # Tilt angle in degrees
 orientation = 0  # Orientation angle in degrees
 a1 = [ 0 , 1 , 0 ]
 a2 = [ -sqrt(3)/2 , -1/2 , 0 ]
-a3 = [ sqrt(3)/2 , 1/2 , 0 ]
+a3 = [ sqrt(3)/2 , -1/2 , 0 ]
 dist1 = compute_dist(angle, orientation, a1)
 dist2 = compute_dist(angle, orientation, a2)
 dist3 = compute_dist(angle, orientation, a3)
-print("Distances", dist1, dist2, dist3)
+print(f"Actuator 1: &d\nActuator 2: %d\nActuator 3: %d", dist1, dist2, dist3)
