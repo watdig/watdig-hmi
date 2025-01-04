@@ -11,38 +11,40 @@ class Database:
         conn = sqlite3.connect(self.db_file)
         cursor = conn.cursor()
 
-        # Create operating data table
+        # Check if table exists before creating it
         cursor.execute('''
-        CREATE TABLE IF NOT EXISTS operating_data (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            speed_rpm FLOAT,
-            output_frequency FLOAT,
-            current_amps FLOAT,
-            torque_percent FLOAT,
-            power_kw FLOAT,
-            dc_bus_voltage FLOAT,
-            output_voltage FLOAT,
-            drive_temp_c FLOAT,
-            drive_cb_temp_c FLOAT,
-            motor_thermal_stress_percent FLOAT
-        )
+            SELECT count(name) FROM sqlite_master 
+            WHERE type='table' AND name='operating_data'
         ''')
 
-        # Create fault history table
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS fault_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            fault_code INTEGER,
-            speed_at_fault FLOAT,
-            frequency_at_fault FLOAT,
-            voltage_at_fault FLOAT,
-            current_at_fault FLOAT,
-            torque_at_fault FLOAT,
-            status_at_fault INTEGER
-        )
-        ''')
+        # If the table doesn't exist, create it
+        if cursor.fetchone()[0] == 0:
+            cursor.execute('''
+                CREATE TABLE operating_data (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    speed_rpm REAL,
+                    output_frequency REAL,
+                    current_amps REAL,
+                    torque_percent REAL,
+                    power_kw REAL,
+                    dc_bus_voltage REAL,
+                    output_voltage REAL,
+                    drive_temp_c REAL,
+                    drive_cb_temp_c REAL,
+                    motor_thermal_stress_percent REAL,
+                    latest_fault TEXT,
+                    speed_at_fault REAL,
+                    frequency_at_fault REAL,
+                    voltage_at_fault REAL,
+                    current_at_fault REAL,
+                    torque_at_fault REAL,
+                    status_at_fault TEXT
+                )
+            ''')
+            print("Created operating_data table")
+        else:
+            print("Table operating_data already exists")
 
         conn.commit()
         conn.close()
@@ -56,8 +58,15 @@ class Database:
         INSERT INTO operating_data (
             speed_rpm, output_frequency, current_amps, torque_percent,
             power_kw, dc_bus_voltage, output_voltage, drive_temp_c,
-            drive_cb_temp_c, motor_thermal_stress_percent
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            drive_cb_temp_c, motor_thermal_stress_percent,
+            latest_fault,
+            speed_at_fault,
+            frequency_at_fault,
+            voltage_at_fault,
+            current_at_fault,
+            torque_at_fault,
+            status_at_fault 
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             data.get('speed_rpm'),
             data.get('output_frequency'),
@@ -68,7 +77,14 @@ class Database:
             data.get('output_voltage'),
             data.get('drive_temp_c'),
             data.get('drive_cb_temp_c'),
-            data.get('motor_thermal_stress_percent')
+            data.get('motor_thermal_stress_percent'),
+            data.get('latest_fault'),
+            data.get('speed_at_fault'),
+            data.get('freq_at_fault'),
+            data.get('voltage_at_fault'),
+            data.get('current_at_fault'),
+            data.get('torque_at_fault'),
+            data.get('status_at_fault')
         ))
         
         conn.commit()
@@ -140,7 +156,14 @@ if __name__ == "__main__":
         'output_voltage': 460,
         'drive_temp_c': 40,
         'drive_cb_temp_c': 35,
-        'motor_thermal_stress_percent': 60
+        'motor_thermal_stress_percent': 60,
+        'latest_fault': 'None',
+        'speed_at_fault': 0,
+        'freq_at_fault': 0,
+        'voltage_at_fault': 0,
+        'current_at_fault': 0,
+        'torque_at_fault': 0,
+        'status_at_fault': 'Normal'
     }
 
     db.log_operating_data(sample_data)

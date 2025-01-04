@@ -7,10 +7,12 @@ const TableContainer = styled.div`
   padding: 1rem;
   background-color: #f5f5f5;
   border-radius: 8px;
+  overflow-x: auto;
+  white-space: nowrap;
 `;
 
 const Table = styled.table`
-  width: 100%;
+  min-width: 100%;
   border-collapse: collapse;
   margin: 1rem 0;
   background-color: white;
@@ -21,13 +23,28 @@ const Th = styled.th`
   color: white;
   padding: 12px;
   text-align: left;
-  position: relative;
-  cursor: pointer;
+  position: sticky;
+  top: 0;
+  min-width: 150px;
+  white-space: nowrap;
+  z-index: 1;
+`;
+
+const ThContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const ColumnTitle = styled.span`
+  text-transform: capitalize;
 `;
 
 const Td = styled.td`
   padding: 12px;
   border-bottom: 1px solid #ddd;
+  min-width: 150px;
+  white-space: nowrap;
 `;
 
 const TabButton = styled.button`
@@ -66,13 +83,28 @@ const RefreshButton = styled.button`
 const FilterInput = styled.input`
   width: 100%;
   padding: 4px;
-  margin-top: 4px;
   box-sizing: border-box;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+
+  &:focus {
+    outline: none;
+    border-color: #2196F3;
+  }
 `;
 
 const RowLimitSelect = styled.select`
   margin: 1rem 0;
   padding: 4px;
+`;
+
+const ControlsContainer = styled.div`
+  position: sticky;
+  left: 0;
+  background-color: #f5f5f5;
+  padding: 1rem;
+  z-index: 1;
 `;
 
 const DataLogging = () => {
@@ -89,10 +121,8 @@ const DataLogging = () => {
     setIsLoading(true);
     try {
       const operatingResponse = await axios.get('http://127.0.0.1:8080/api/data/operating');
-      const faultResponse = await axios.get('http://127.0.0.1:8080/api/data/faults');
       
       setOperatingData(operatingResponse.data);
-      setFaultData(faultResponse.data);
     } catch (error) {
       console.error('Error fetching data:', error);
       alert('Failed to fetch data from the database. Please try again later.');
@@ -155,21 +185,45 @@ const DataLogging = () => {
   const renderOperatingTable = () => {
     const filteredData = applyFilters(operatingData);
     const sortedData = applySorting(filteredData);
-    const displayedData = rowLimit === totalOperatingRows ? sortedData : sortedData.slice(0, rowLimit); // Limit the number of rows displayed
+    const displayedData = rowLimit === totalOperatingRows ? sortedData : sortedData.slice(0, rowLimit);
+
+    const columns = [
+      'timestamp',
+      'speed_rpm',
+      'output_frequency',
+      'current_amps',
+      'torque_percent',
+      'power_kw',
+      'dc_bus_voltage',
+      'output_voltage',
+      'drive_temp_c',
+      'drive_cb_temp_c',
+      'motor_thermal_stress_percent',
+      'latest_fault_code',
+      'speed_at_fault',
+      'frequency_at_fault',
+      'voltage_at_fault',
+      'current_at_fault',
+      'torque_at_fault',
+      'status_at_fault'
+    ];
 
     return (
       <Table>
         <thead>
           <tr>
-            {['timestamp', 'speed_rpm', 'output_frequency', 'current_amps', 'torque_percent', 'power_kw', 'dc_bus_voltage', 'output_voltage', 'drive_temp_c', 'drive_cb_temp_c', 'motor_thermal_stress_percent'].map(column => (
-              <Th key={column} onClick={() => handleSort(column)}>
-                {column.replace(/_/g, ' ')}
-                <FilterInput
-                  type="text"
-                  placeholder="Filter"
-                  onChange={(e) => handleFilterChange(column, e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                />
+            {columns.map(column => (
+              <Th key={column}>
+                <ThContent>
+                  <ColumnTitle onClick={() => handleSort(column)}>
+                    {column.replace(/_/g, ' ')}
+                  </ColumnTitle>
+                  <FilterInput
+                    type="text"
+                    placeholder={`Filter ${column.replace(/_/g, ' ')}`}
+                    onChange={(e) => handleFilterChange(column, e.target.value)}
+                  />
+                </ThContent>
               </Th>
             ))}
           </tr>
@@ -188,46 +242,13 @@ const DataLogging = () => {
               <Td>{row.drive_temp_c}</Td>
               <Td>{row.drive_cb_temp_c}</Td>
               <Td>{row.motor_thermal_stress_percent}</Td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
-    );
-  };
-
-  const renderFaultTable = () => {
-    const filteredData = applyFilters(faultData);
-    const sortedData = applySorting(filteredData);
-    const displayedData = rowLimit === totalFaultRows ? sortedData : sortedData.slice(0, rowLimit); // Limit the number of rows displayed
-
-    return (
-      <Table>
-        <thead>
-          <tr>
-            {['timestamp', 'fault_code', 'speed_at_fault', 'frequency_at_fault', 'voltage_at_fault', 'current_at_fault', 'torque_at_fault', 'status_at_fault'].map(column => (
-              <Th key={column} onClick={() => handleSort(column)}>
-                {column.replace(/_/g, ' ')}
-                <FilterInput
-                  type="text"
-                  placeholder="Filter"
-                  onChange={(e) => handleFilterChange(column, e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </Th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {displayedData.map((row, index) => (
-            <tr key={index}>
-              <Td>{row.timestamp}</Td>
-              <Td>{row.fault_code}</Td>
-              <Td>{row.speed_at_fault}</Td>
-              <Td>{row.frequency_at_fault}</Td>
-              <Td>{row.voltage_at_fault}</Td>
-              <Td>{row.current_at_fault}</Td>
-              <Td>{row.torque_at_fault}</Td>
-              <Td>{row.status_at_fault}</Td>
+              <Td>{row.fault_code || '-'}</Td>
+              <Td>{row.speed_at_fault || '-'}</Td>
+              <Td>{row.frequency_at_fault || '-'}</Td>
+              <Td>{row.voltage_at_fault || '-'}</Td>
+              <Td>{row.current_at_fault || '-'}</Td>
+              <Td>{row.torque_at_fault || '-'}</Td>
+              <Td>{row.status_at_fault || '-'}</Td>
             </tr>
           ))}
         </tbody>
@@ -238,19 +259,7 @@ const DataLogging = () => {
   return (
     <div>
       <h2>Data Logging</h2>
-      <div>
-        <TabButton 
-          active={activeTable === 'operating'}
-          onClick={() => setActiveTable('operating')}
-        >
-          Operating Data
-        </TabButton>
-        <TabButton 
-          active={activeTable === 'fault'}
-          onClick={() => setActiveTable('fault')}
-        >
-          Fault History
-        </TabButton>
+      <ControlsContainer>
         <RefreshButton 
           onClick={() => {
             setManualRefresh(true);
@@ -260,21 +269,24 @@ const DataLogging = () => {
         >
           {manualRefresh ? 'Refreshing...' : 'Refresh Data'}
         </RefreshButton>
-      </div>
-      <RowLimitSelect value={rowLimit} onChange={(e) => {
-        const value = e.target.value;
-        setRowLimit(value === 'all' ? totalOperatingRows : Number(value)); // Set rowLimit to total rows if "Show All" is selected
-      }}>
-        <option value={5}>5 Rows</option>
-        <option value={10}>10 Rows</option>
-        <option value={20}>20 Rows</option>
-        <option value={50}>50 Rows</option>
-        <option value={100}>100 Rows</option>
-        <option value={250}>250 Rows</option>
-        <option value={totalOperatingRows}>Show All ({totalOperatingRows})</option> {/* Option for total rows */}
-      </RowLimitSelect>
+        <RowLimitSelect 
+          value={rowLimit} 
+          onChange={(e) => {
+            const value = e.target.value;
+            setRowLimit(value === 'all' ? totalOperatingRows : Number(value));
+          }}
+        >
+          <option value={5}>5 Rows</option>
+          <option value={10}>10 Rows</option>
+          <option value={20}>20 Rows</option>
+          <option value={50}>50 Rows</option>
+          <option value={100}>100 Rows</option>
+          <option value={250}>250 Rows</option>
+          <option value={totalOperatingRows}>Show All ({totalOperatingRows})</option>
+        </RowLimitSelect>
+      </ControlsContainer>
       <TableContainer>
-        {activeTable === 'operating' ? renderOperatingTable() : renderFaultTable()}
+        {renderOperatingTable()}
       </TableContainer>
     </div>
   );

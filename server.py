@@ -76,7 +76,7 @@ class ModbusConnection:
         logger.error("Failed to connect after maximum retries")  # Log failure after max retries
         return False  # Return False if connection fails after retries
 
-    def read_register(self, register):
+    def read_register(self, register, unitID):
         # Method to read a value from a specified Modbus register
         try:
             # Ensure the Modbus client is connected before reading
@@ -85,7 +85,7 @@ class ModbusConnection:
                     raise Exception("Failed to reconnect to Modbus device")
 
             # Read the specified holding register
-            result = self.client.read_holding_registers(register, 1)
+            result = self.client.read_holding_registers(register, unitID)
 
             # Check for errors in the result
             if result.isError():
@@ -275,70 +275,70 @@ OPERATING DATA REGISTERS
 @handle_modbus_errors
 def get_speed_dir():
     """Get motor speed and direction (-30000 to 30000 rpm)"""
-    speed = modbus.read_register(100)
+    speed = modbus.read_register(100, 1)
     return format_response(speed, "Speed & Direction", "rpm")
 
 @app.route('/api/data/output-frequency', methods=['GET'])
 @handle_modbus_errors
 def get_output_freq():
     """Get output frequency (0.0 - 500Hz)"""
-    frequency = modbus.read_register(102)
+    frequency = modbus.read_register(102, 1)
     return format_response(frequency, "Output Frequency", "Hz", 0.1)
 
 @app.route('/api/data/current', methods=['GET'])
 @handle_modbus_errors
 def get_current():
     """Get current (0.0 - 2.0 * I2hd)"""
-    current = modbus.read_register(103)
+    current = modbus.read_register(103, 1)
     return format_response(current, "Current", "A", 0.1)
 
 @app.route('/api/data/torque', methods=['GET'])
 @handle_modbus_errors
 def get_torque():
     """Get torque (-200 to 200%)"""
-    torque = modbus.read_register(104)
+    torque = modbus.read_register(104, 1)
     return format_response(torque, "Torque", "%")
 
 @app.route('/api/data/power', methods=['GET'])
 @handle_modbus_errors
 def get_power():
     """Get power output"""
-    power = modbus.read_register(105)
+    power = modbus.read_register(105, 1)
     return format_response(power, "Power", "kW", 0.1)
 
 @app.route('/api/data/dc-bus-voltage', methods=['GET'])
 @handle_modbus_errors
 def get_dc_bus_voltage():
     """Get DC bus voltage"""
-    dc_bus_voltage = modbus.read_register(106)
+    dc_bus_voltage = modbus.read_register(106, 1)
     return format_response(dc_bus_voltage, "DC Bus Voltage", "V")
 
 @app.route('/api/data/output-voltage', methods=['GET'])
 @handle_modbus_errors
 def get_output_voltage():
     """Get output voltage"""
-    output_voltage = modbus.read_register(108)
+    output_voltage = modbus.read_register(108, 1)
     return format_response(output_voltage, "Output Voltage", "V")
 
 @app.route('/api/data/drive-temp', methods=['GET'])
 @handle_modbus_errors
 def get_drive_temp():
     """Get drive temperature"""
-    drive_temp = modbus.read_register(109)
+    drive_temp = modbus.read_register(109, 1)
     return format_response(drive_temp, "Drive Temperature", "°C")
 
 @app.route('/api/data/drive-cb-temp', methods=['GET'])
 @handle_modbus_errors
 def get_cb_temp():
     """Get drive control board temperature"""
-    cb_temp = modbus.read_register(149)
+    cb_temp = modbus.read_register(149, 1)
     return format_response(cb_temp, "Drive CB Temperature", "°C")
 
 @app.route('/api/data/mot-therm-stress', methods=['GET'])
 @handle_modbus_errors
 def get_mot_therm_stress():
     """Get motor thermal stress level"""
-    mot_therm_stress = modbus.read_register(152)
+    mot_therm_stress = modbus.read_register(152, 1)
     return format_response(mot_therm_stress, "Motor Thermal Stress", "%")
 
 '''
@@ -349,49 +349,49 @@ FAULT HISTORY REGISTERS
 @handle_modbus_errors
 def get_latest_fault():
     """Get latest fault code"""
-    latest_fault = modbus.read_register(401)
+    latest_fault = modbus.read_register(401, 1)
     return format_response(latest_fault, "Latest Fault", "code")
 
 @app.route('/api/fault/speed-at-fault', methods=['GET'])
 @handle_modbus_errors
 def get_speed_at_fault():
     """Get speed at time of fault"""
-    speed_at_fault = modbus.read_register(404)
+    speed_at_fault = modbus.read_register(404, 1)
     return format_response(speed_at_fault, "Speed at Fault", "rpm")
 
 @app.route('/api/fault/freq-at-fault', methods=['GET'])
 @handle_modbus_errors
 def get_freq_at_fault():
     """Get frequency at time of fault"""
-    freq_at_fault = modbus.read_register(405)
+    freq_at_fault = modbus.read_register(405, 1)
     return format_response(freq_at_fault, "Frequency at Fault", "Hz", 0.1)
 
 @app.route('/api/fault/voltage-at-fault', methods=['GET'])
 @handle_modbus_errors
 def get_voltage_at_fault():
     """Get voltage at time of fault"""
-    voltage_at_fault = modbus.read_register(406)
+    voltage_at_fault = modbus.read_register(406, 1)
     return format_response(voltage_at_fault, "Voltage at Fault", "V")
 
 @app.route('/api/fault/current-at-fault', methods=['GET'])
 @handle_modbus_errors
 def get_current_at_fault():
     """Get current at time of fault"""
-    current_at_fault = modbus.read_register(407)
+    current_at_fault = modbus.read_register(407, 1)
     return format_response(current_at_fault, "Current at Fault", "A", 0.1)
 
 @app.route('/api/fault/torque-at-fault', methods=['GET'])
 @handle_modbus_errors
 def get_torque_at_fault():
     """Get torque at time of fault"""
-    torque_at_fault = modbus.read_register(408)
+    torque_at_fault = modbus.read_register(408, 1)
     return format_response(torque_at_fault, "Torque at Fault", "%")
 
 @app.route('/api/fault/status-at-fault', methods=['GET'])
 @handle_modbus_errors
 def get_status_at_fault():
     """Get status at time of fault"""
-    status_at_fault = modbus.read_register(409)
+    status_at_fault = modbus.read_register(409, 1)
     return format_response(status_at_fault, "Status at Fault", "code")
 
 # Health check endpoint
@@ -422,14 +422,14 @@ def get_operating_data():
         cursor.execute('''
             SELECT timestamp, speed_rpm, output_frequency, current_amps,
                    torque_percent, power_kw, dc_bus_voltage, output_voltage,
-                   drive_temp_c, drive_cb_temp_c, motor_thermal_stress_percent
+                   drive_temp_c, drive_cb_temp_c, motor_thermal_stress_percent, latest_fault, speed_at_fault, frequency_at_fault, voltage_at_fault, current_at_fault, torque_at_fault, status_at_fault
             FROM operating_data 
             ORDER BY timestamp DESC;
         ''')
         
         columns = ['timestamp', 'speed_rpm', 'output_frequency', 'current_amps',
                   'torque_percent', 'power_kw', 'dc_bus_voltage', 'output_voltage',
-                  'drive_temp_c', 'drive_cb_temp_c', 'motor_thermal_stress_percent']
+                  'drive_temp_c', 'drive_cb_temp_c', 'motor_thermal_stress_percent', 'latest_fault', 'speed_at_fault', 'frequency_at_fault', 'voltage_at_fault', 'current_at_fault', 'torque_at_fault', 'status_at_fault']
         
         rows = cursor.fetchall()
         result = [dict(zip(columns, row)) for row in rows]

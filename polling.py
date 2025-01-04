@@ -18,6 +18,13 @@ API_ENDPOINTS = {
     "drive_temp": "http://127.0.0.1:8080/api/data/drive-temp",
     "drive_cb_temp": "http://127.0.0.1:8080/api/data/drive-cb-temp",
     "mot_therm_stress": "http://127.0.0.1:8080/api/data/mot-therm-stress",
+    "latest_fault": "http://127.0.0.1:8080/api/fault/latest-fault",
+    "speed_at_fault": "http://127.0.0.1:8080/api/fault/speed-at-fault",
+    "freq_at_fault": "http://127.0.0.1:8080/api/fault/freq-at-fault",
+    "voltage_at_fault": "http://127.0.0.1:8080/api/fault/voltage-at-fault",
+    "current_at_fault": "http://127.0.0.1:8080/api/fault/current-at-fault",
+    "torque_at_fault": "http://127.0.0.1:8080/api/fault/torque-at-fault",
+    "status_at_fault": "http://127.0.0.1:8080/api/fault/status-at-fault",
 }
 
 def fetch_data(endpoint):
@@ -50,6 +57,14 @@ def poll_data():
             "drive_temp_c": results["drive_temp"].get("Drive Temperature", {}).get("value"),
             "drive_cb_temp_c": results["drive_cb_temp"].get("Drive CB Temperature", {}).get("value"),
             "motor_thermal_stress_percent": results["mot_therm_stress"].get("Motor Thermal Stress", {}).get("value"),
+            "latest_fault": results["latest_fault"].get("Latest Fault", {}).get("value"),
+            "speed_at_fault": results["speed_at_fault"].get("Speed at Fault", {}).get("value"),
+            "freq_at_fault": results["freq_at_fault"].get("Frequency at Fault", {}).get("value"),
+            "voltage_at_fault": results["voltage_at_fault"].get("Voltage at Fault", {}).get("value"),
+            "current_at_fault": results
+            ["current_at_fault"].get("Current at Fault", {}).get("value"),
+            "torque_at_fault": results["torque_at_fault"].get("Torque at Fault", {}).get("value"),
+            "status_at_fault": results["status_at_fault"].get("Status at Fault", {}).get("value"),
         }
 
         # Log the data into the database
