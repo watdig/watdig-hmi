@@ -6,7 +6,7 @@ import time
 import sys
 import glob
 import serial
-from database import Database
+from Services.database_service import Database
 import sqlite3
 from flask_cors import CORS
 

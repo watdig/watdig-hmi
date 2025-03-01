@@ -6,7 +6,7 @@ import time
 import sys
 import glob
 import serial
-from database import Database
+from Services.database_service import Database
 import sqlite3
 from flask_cors import CORS
 
@@ -117,8 +117,8 @@ class ModbusConnection:
             logger.error(f"Error writing to register {register}: {str(e)}")
             raise  # Re-raise the exception
 
-def test_power_meter():
-    print(modbus.read_register(0))
+    def test_power_meter():
+        print(modbus.read_register(0))
 
 if __name__ == '__main__':
     # Start Flask app
