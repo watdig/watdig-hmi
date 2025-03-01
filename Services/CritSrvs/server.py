@@ -6,23 +6,26 @@ import time
 import sys
 import glob
 import serial
-from database import Database as db
+from Services.database_service import Database as db
 import sqlite3
 from flask_cors import CORS
 import threading
-from Modbus.modbus import ModbusConnection
-from Helpers.logger_service import info, error
+from Services.modbus_service import ModbusConnection
+from Services.logger_service import info, error
 from Models.ModbusDB.operating_data_table import OperatingData
 
-#Init install of the flask app
-app = Flask(__name__)
-CORS(app)
+def create_app():
+    app = Flask(__name__)
+    CORS(app)
+    return app
 
+def run_server():
+    app = create_app()
+    app.run(use_reloader=False, host='0.0.0.0', port=8080)
+
+# Start instance of Modbus Connection and Flask App
 modbus = ModbusConnection()
-
-####
-#TODO: Make sure to modify on all read and write register functions
-####
+app = create_app()
 
 @app.route('/api/startup-sequence', methods=['GET'])
 def startup_sequence():
@@ -301,12 +304,4 @@ def get_operating_data():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    # Start the test startup sequence in a separate thread
-    #test_thread = threading.Thread(target=test_startup_sequence)
-    #test_thread.start()  # Start the thread
-
-    # Start Flask app
-    app.run(use_reloader=False, host='0.0.0.0', port=8080)
-
-    # Optionally, wait for the test thread to finish
-    #test_thread.join()
+    run_server()

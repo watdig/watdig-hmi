@@ -6,11 +6,11 @@ import time
 import sys
 import glob
 import serial
-from database import Database
+from Services.database_service import Database
 import sqlite3
 from flask_cors import CORS
 import threading
-from Helpers.logger_service import info, error, warning, debug, critical
+from Services.logger_service import info, error, warning, debug, critical
 
 class ModbusConnection:
     def __init__(self, port='/dev/tty.SLAB_USBtoUART', baudrate=9600, timeout=5):

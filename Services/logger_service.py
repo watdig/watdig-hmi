@@ -1,10 +1,12 @@
 import logging
 import sys
 from logging.handlers import RotatingFileHandler
+import os
 
 class LoggerService:
     _instance = None
     _logger = None
+    log_file_path = 'logs/watdig_hmi.log'
 
     def __new__(cls):
         if cls._instance is None:
@@ -24,9 +26,13 @@ class LoggerService:
             datefmt='%Y-%m-%d %H:%M:%S'
         )
 
+        # Create logs directory if it doesn't exist
+        log_dir = os.path.dirname(cls.log_file_path)
+        os.makedirs(log_dir, exist_ok=True)
+
         # Create and setup file handler (with rotation)
         file_handler = RotatingFileHandler(
-            'logs/watdig_hmi.log',
+            cls.log_file_path,
             maxBytes=10485760,  # 10MB
             backupCount=5
         )

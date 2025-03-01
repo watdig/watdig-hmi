@@ -1,7 +1,7 @@
 import time
 import requests
 import sqlite3
-from database import Database
+from Services.database_service import Database
 
 # Initialize the database
 db = Database()
@@ -73,8 +73,11 @@ def poll_data():
         # Wait for 0.1 seconds before the next poll
         time.sleep(2)
 
-if __name__ == "__main__":
+def start_polling():
     try:
         poll_data()
     except KeyboardInterrupt:
-        print("Polling stopped.") 
+        print("Polling stopped.")
+
+if __name__ == "__main__":
+    start_polling() 
