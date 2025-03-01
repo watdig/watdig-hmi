@@ -26,20 +26,20 @@ modbus = ModbusConnection()
 
 @app.route('/api/startup-sequence', methods=['GET'])
 def startup_sequence():
-    modbus.write_register(0, 0b110)
+    modbus.write_register(0, 0b110, 1)
     time.sleep(0.1)
-    modbus.write_register(0, 0b111)
-    modbus.write_register(0, 0b1111)
-    modbus.write_register(0, 0b101111)
-    modbus.write_register(0, 0b1101111)
+    modbus.write_register(0, 0b111, 1)
+    modbus.write_register(0, 0b1111, 1)
+    modbus.write_register(0, 0b101111, 1)
+    modbus.write_register(0, 0b1101111, 1)
 
 @app.route('/api/stop-motor', methods=['GET'])
 def stop_motor():
-    modbus.write_register(0, 0)
+    modbus.write_register(0, 0, 1)
 
 @app.route('/api/reverse-motor', methods=['GET'])
 def reverse_motor():
-    modbus.write_register(0, 0)
+    modbus.write_register(0, 0, 1)
 
 @app.route('/api/set-frequency', methods=['POST'])
 def set_frequency():
@@ -57,7 +57,7 @@ def set_frequency():
         frequency = int(frequency)
         if -20000 <= frequency <= 20000:  # Allow negative values for reverse
             try:
-                modbus.write_register(1, frequency)
+                modbus.write_register(1, frequency, 1)
                 info(f"Successfully set frequency to {frequency} ({(frequency * 60/20000):.1f} Hz)")
                 return jsonify({
                     "status": "success",
@@ -99,7 +99,7 @@ def reverse_frequency():
         frequency = int(frequency)
         if -20000 <= frequency <= 20000:  # Allow negative values for reverse
             try:
-                modbus.write_register(1, frequency)
+                modbus.write_register(1, frequency, 1)
                 info(f"Successfully set frequency to {frequency} ({(frequency * 60/20000):.1f} Hz)")
                 return jsonify({
                     "status": "success",
@@ -275,12 +275,10 @@ def get_status_at_fault():
     status_at_fault = modbus.read_register(409, 1)
     return format_response(status_at_fault, "Status at Fault", "code")
 
-# Health check endpoint
 @app.route('/health', methods=['GET'])
 def health_check():
     """API health check endpoint"""
     try:
-        # Try to read a register to verify Modbus connection
         modbus.read_register(101)
         return jsonify({
             "status": "healthy",
