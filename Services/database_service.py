@@ -17,7 +17,7 @@ class Database:
         conn = sqlite3.connect(self.db_file)
         cursor = conn.cursor()
 
-        # Check if table exists before creating it
+        # Check if operating_data table exists before creating it
         cursor.execute('''
             SELECT count(name) FROM sqlite_master 
             WHERE type='table' AND name='operating_data'
@@ -51,6 +51,41 @@ class Database:
             print("Created operating_data table")
         else:
             print("Table operating_data already exists")
+
+        # Check if operating_data_water_pump table exists before creating it
+        cursor.execute('''
+            SELECT count(name) FROM sqlite_master 
+            WHERE type='table' AND name='operating_data_water_pump'
+        ''')
+
+        # If the water pump table doesn't exist, create it
+        if cursor.fetchone()[0] == 0:
+            cursor.execute('''
+                CREATE TABLE operating_data_water_pump (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    speed_rpm REAL,
+                    output_frequency REAL,
+                    current_amps REAL,
+                    torque_percent REAL,
+                    power_kw REAL,
+                    dc_bus_voltage REAL,
+                    output_voltage REAL,
+                    drive_temp_c REAL,
+                    drive_cb_temp_c REAL,
+                    motor_thermal_stress_percent REAL,
+                    latest_fault TEXT,
+                    speed_at_fault REAL,
+                    frequency_at_fault REAL,
+                    voltage_at_fault REAL,
+                    current_at_fault REAL,
+                    torque_at_fault REAL,
+                    status_at_fault TEXT
+                )
+            ''')
+            print("Created operating_data_water_pump table")
+        else:
+            print("Table operating_data_water_pump already exists")
 
         conn.commit()
         conn.close()
@@ -86,7 +121,7 @@ class Database:
             .order_by(desc(OperatingData.timestamp))\
             .all()
 
-if __name__ == "__main__":
+'''if __name__ == "__main__":
     # Create database instance
     db = Database()
 
@@ -111,4 +146,4 @@ if __name__ == "__main__":
         'status_at_fault': 'Normal'
     }
 
-    db.log_operating_data(sample_data)
+    db.log_operating_data(sample_data)'''
