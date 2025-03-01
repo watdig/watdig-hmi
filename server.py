@@ -6,142 +6,23 @@ import time
 import sys
 import glob
 import serial
-from database import Database
+from database import Database as db
 import sqlite3
 from flask_cors import CORS
 import threading
+from Modbus.modbus import ModbusConnection
+from Helpers.logger_service import info, error
+from Models.ModbusDB.operating_data_table import OperatingData
 
+#Init install of the flask app
 app = Flask(__name__)
 CORS(app)
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
-
-
-
-class ModbusConnection:
-    def __init__(self, port='/dev/tty.SLAB_USBtoUART', baudrate=9600, timeout=5):
-        # Initialize the Modbus connection parameters
-        self.port = port  # Serial port to connect to
-        self.baudrate = baudrate  # Baud rate for the connection
-        self.timeout = timeout  # Timeout for the connection
-        self.client = None  # Placeholder for the Modbus client
-        self.connect()  # Attempt to connect to the Modbus device upon initialization
-
-    def connect(self):
-        # Method to establish a connection to the Modbus device
-        retry_count = 0  # Counter for connection attempts
-        max_retries = 3  # Maximum number of retries for connection
-        
-        while retry_count < max_retries:
-            try:
-                # Check if the client is already connected and close it if so
-                if self.client and self.client.is_socket_open():
-                    self.client.close()
-
-                # Initialize the Modbus client with the specified parameters
-                self.client = ModbusClient(
-                    port=self.port,
-                    baudrate=self.baudrate,
-                    timeout=self.timeout
-                )
-
-                # Attempt to connect to the Modbus device
-                if self.client.connect():
-                    logger.info(f"Successfully connected to Modbus device on {self.port}")
-                    return True  # Return True if connection is successful
-                else:
-                    # Raise an exception if the connection fails
-                    raise serial.serialutil.SerialException(f"Failed to open port {self.port}")
-
-            except serial.serialutil.SerialException as e:
-                # Handle specific serial exceptions
-                if "Resource temporarily unavailable" in str(e):
-                    logger.warning(f"Port {self.port} is temporarily unavailable, retrying...")
-                else:
-                    logger.error(f"Serial exception on connection attempt {retry_count + 1}: {str(e)}")
-                    
-                retry_count += 1  # Increment the retry count
-                time.sleep(1)  # Wait for a second before retrying
-
-            except Exception as e:
-                # Handle any other exceptions that may occur
-                logger.error(f"Connection attempt {retry_count + 1} failed: {str(e)}")
-                retry_count += 1  # Increment the retry count
-                time.sleep(1)  # Wait before the next retry
-                
-        logger.error("Failed to connect after maximum retries")  # Log failure after max retries
-        return False  # Return False if connection fails after retries
-
-    def read_register(self, register, unitID):
-        # Method to read a value from a specified Modbus register
-        try:
-            # Ensure the Modbus client is connected before reading
-            if not self.client or not self.client.is_socket_open():
-                if not self.connect():  # Attempt to reconnect if not connected
-                    raise Exception("Failed to reconnect to Modbus device")
-
-            # Read the specified holding register
-            result = self.client.read_holding_registers(register, unitID)
-
-            # Check for errors in the result
-            if result.isError():
-                raise Exception(f"Modbus error reading register {register}")
-
-            # Return the first value from the result (register value)
-            return result.registers[0]
-
-        except Exception as e:
-            # Log any errors that occur during the read operation
-            logger.error(f"Error reading register {register}: {str(e)}")
-            raise  # Re-raise the exception for further handling
-
-    def write_register(self, register, value):
-        # Method to write a value to a specified Modbus register
-        try:
-            # Ensure the Modbus client is connected before writing
-            if not self.client or not self.client.is_socket_open():
-                if not self.connect():  # Attempt to reconnect if not connected
-                    raise Exception("Failed to reconnect to Modbus device")
-
-            # Write the specified value to the holding register
-            result = self.client.write_register(register, value)
-
-            # Check for errors in the result
-            if result.isError():
-                raise Exception(f"Modbus error writing to register {register}")
-
-            # Log successful write operation
-            logger.info(f"Successfully wrote value {value} to register {register}")
-
-        except Exception as e:
-            # Log any errors that occur during the write operation
-            logger.error(f"Error writing to register {register}: {str(e)}")
-            raise  # Re-raise the exception for further handling
-
-# Create global Modbus connection instance
 modbus = ModbusConnection()
 
-def test_startup_sequence():
-    n = 0
-    modbus.write_register(1, 20000)
-    modbus.write_register(0, 0b110)
-    time.sleep(0.1)
-    modbus.write_register(0, 0b111)
-    modbus.write_register(0, 0b1111)
-    modbus.write_register(0, 0b101111)
-    modbus.write_register(0, 0b1101111)
-    while n < 300:
-        print(bin(modbus.read_register(3)))
-        time.sleep(0.1)
-        n += 1
-    modbus.write_register(0, 0b1101110)
-    while True:
-        print(bin(modbus.read_register(3)))
-
+####
+#TODO: Make sure to modify on all read and write register functions
+####
 
 @app.route('/api/startup-sequence', methods=['GET'])
 def startup_sequence():
@@ -177,14 +58,14 @@ def set_frequency():
         if -20000 <= frequency <= 20000:  # Allow negative values for reverse
             try:
                 modbus.write_register(1, frequency)
-                logger.info(f"Successfully set frequency to {frequency} ({(frequency * 60/20000):.1f} Hz)")
+                info(f"Successfully set frequency to {frequency} ({(frequency * 60/20000):.1f} Hz)")
                 return jsonify({
                     "status": "success",
                     "message": "Frequency set successfully",
                     "value": frequency
                 }), 200
             except Exception as e:
-                logger.error(f"Modbus error writing frequency: {str(e)}")
+                error(f"Modbus error writing frequency: {str(e)}")
                 return jsonify({
                     "status": "error",
                     "message": f"Modbus error: {str(e)}"
@@ -196,7 +77,7 @@ def set_frequency():
             }), 400
             
     except Exception as e:
-        logger.error(f"Error in set_frequency: {str(e)}")
+        error(f"Error in set_frequency: {str(e)}")
         return jsonify({
             "status": "error",
             "message": str(e)
@@ -219,14 +100,14 @@ def reverse_frequency():
         if -20000 <= frequency <= 20000:  # Allow negative values for reverse
             try:
                 modbus.write_register(1, frequency)
-                logger.info(f"Successfully set frequency to {frequency} ({(frequency * 60/20000):.1f} Hz)")
+                info(f"Successfully set frequency to {frequency} ({(frequency * 60/20000):.1f} Hz)")
                 return jsonify({
                     "status": "success",
                     "message": "Frequency set successfully",
                     "value": frequency
                 }), 200
             except Exception as e:
-                logger.error(f"Modbus error writing frequency: {str(e)}")
+                error(f"Modbus error writing frequency: {str(e)}")
                 return jsonify({
                     "status": "error",
                     "message": f"Modbus error: {str(e)}"
@@ -238,7 +119,7 @@ def reverse_frequency():
             }), 400
             
     except Exception as e:
-        logger.error(f"Error in set_frequency: {str(e)}")
+        error(f"Error in set_frequency: {str(e)}")
         return jsonify({
             "status": "error",
             "message": str(e)
@@ -251,7 +132,7 @@ def handle_modbus_errors(f):
         try:
             return f(*args, **kwargs)
         except Exception as e:
-            logger.error(f"Error in {f.__name__}: {str(e)}")
+            error(f"Error in {f.__name__}: {str(e)}")
             return jsonify({
                 "error": "Modbus communication error",
                 "details": str(e)
@@ -411,60 +292,14 @@ def health_check():
             "message": f"Modbus connection error: {str(e)}"
         }), 503
 
-db = Database()
 
 @app.route('/api/data/operating', methods=['GET'])
 def get_operating_data():
     try:
-        conn = sqlite3.connect('modbus_logs.db')
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            SELECT timestamp, speed_rpm, output_frequency, current_amps,
-                   torque_percent, power_kw, dc_bus_voltage, output_voltage,
-                   drive_temp_c, drive_cb_temp_c, motor_thermal_stress_percent, latest_fault, speed_at_fault, frequency_at_fault, voltage_at_fault, current_at_fault, torque_at_fault, status_at_fault
-            FROM operating_data 
-            ORDER BY timestamp DESC;
-        ''')
-        
-        columns = ['timestamp', 'speed_rpm', 'output_frequency', 'current_amps',
-                  'torque_percent', 'power_kw', 'dc_bus_voltage', 'output_voltage',
-                  'drive_temp_c', 'drive_cb_temp_c', 'motor_thermal_stress_percent', 'latest_fault', 'speed_at_fault', 'frequency_at_fault', 'voltage_at_fault', 'current_at_fault', 'torque_at_fault', 'status_at_fault']
-        
-        rows = cursor.fetchall()
-        result = [dict(zip(columns, row)) for row in rows]
-        
-        conn.close()
-        return jsonify(result)
-        
+        rows = db.get_recent_operating_data()
+        return jsonify([row.to_dict() for row in rows])
     except Exception as e:
-        print(f"Error fetching operating data: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/data/faults', methods=['GET'])
-def get_fault_data():
-    try:
-        conn = sqlite3.connect('modbus_logs.db')
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            SELECT timestamp, fault_code, speed_at_fault, frequency_at_fault,
-                   voltage_at_fault, current_at_fault, torque_at_fault, status_at_fault
-            FROM fault_history 
-            ORDER BY timestamp DESC;
-        ''')
-        
-        columns = ['timestamp', 'fault_code', 'speed_at_fault', 'frequency_at_fault',
-                  'voltage_at_fault', 'current_at_fault', 'torque_at_fault', 'status_at_fault']
-        
-        rows = cursor.fetchall()
-        result = [dict(zip(columns, row)) for row in rows]
-        
-        conn.close()
-        return jsonify(result)
-        
-    except Exception as e:
-        print(f"Error fetching fault data: {str(e)}")
+        error(f"Error fetching operating data: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
