@@ -303,5 +303,14 @@ def get_operating_data():
         error(f"Error fetching operating data: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/wp/data/operating', methods=['GET'])
+def get_operating_data():
+    try:
+        rows = db.get_recent_operating_data_water_pump()
+        return jsonify([row.to_dict() for row in rows])
+    except Exception as e:
+        error(f"Error fetching operating data for waterpump: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     run_server()

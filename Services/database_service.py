@@ -4,6 +4,7 @@ from tabulate import tabulate
 from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker
 from Models.ModbusDB.operating_data_table import Base, OperatingData
+from Models.ModbusDB.operating_data_water_pump import Base, OperatingDataWaterPump
 
 class Database:
     def __init__(self, db_file="modbus_logs.db"):
@@ -115,10 +116,41 @@ class Database:
         
         self.session.add(operating_data)
         self.session.commit()
+    
+    def log_operating_data_water_pump(self, data):
+        print("Logging operating data for water pump:", data)  # Debugging line
+        
+        operating_data = OperatingDataWaterPump(
+            speed_rpm=data.get('speed_rpm'),
+            output_frequency=data.get('output_frequency'),
+            current_amps=data.get('current_amps'),
+            torque_percent=data.get('torque_percent'),
+            power_kw=data.get('power_kw'),
+            dc_bus_voltage=data.get('dc_bus_voltage'),
+            output_voltage=data.get('output_voltage'),
+            drive_temp_c=data.get('drive_temp_c'),
+            drive_cb_temp_c=data.get('drive_cb_temp_c'),
+            motor_thermal_stress_percent=data.get('motor_thermal_stress_percent'),
+            latest_fault=data.get('latest_fault'),
+            speed_at_fault=data.get('speed_at_fault'),
+            frequency_at_fault=data.get('freq_at_fault'),
+            voltage_at_fault=data.get('voltage_at_fault'),
+            current_at_fault=data.get('current_at_fault'),
+            torque_at_fault=data.get('torque_at_fault'),
+            status_at_fault=data.get('status_at_fault')
+        )
+        
+        self.session.add(operating_data)
+        self.session.commit()
 
     def get_recent_operating_data(self):
         return self.session.query(OperatingData)\
             .order_by(desc(OperatingData.timestamp))\
+            .all()
+    
+    def get_recent_operating_data_water_pump(self):
+        return self.session.query(OperatingDataWaterPump)\
+            .order_by(desc(OperatingDataWaterPump.timestamp))\
             .all()
 
 '''if __name__ == "__main__":
