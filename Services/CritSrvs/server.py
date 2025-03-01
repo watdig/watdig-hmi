@@ -27,6 +27,10 @@ def run_server():
 modbus = ModbusConnection()
 app = create_app()
 
+
+'''
+    FRONT END CONTROL ENDPOINTS (CUTTER FACE)
+'''
 @app.route('/api/startup-sequence', methods=['GET'])
 def startup_sequence():
     modbus.write_register(0, 0b110, 1)
@@ -40,6 +44,7 @@ def startup_sequence():
 def stop_motor():
     modbus.write_register(0, 0, 1)
 
+#Currently not working
 @app.route('/api/reverse-motor', methods=['GET'])
 def reverse_motor():
     modbus.write_register(0, 0, 1)
@@ -86,6 +91,7 @@ def set_frequency():
             "message": str(e)
         }), 500
 
+# Currently Not Working
 @app.route('/api/revese-frequency', methods=['POST'])
 def reverse_frequency():
     """Set the VFD frequency based on the provided value"""
@@ -128,6 +134,115 @@ def reverse_frequency():
             "message": str(e)
         }), 500
 
+'''
+    FRONT END CONTROL ENDPOINTS (WATER PUMP)
+'''
+@app.route('/api/wp/startup-sequence', methods=['GET'])
+def startup_sequence():
+    modbus.write_register(0, 0b110, 2)
+    time.sleep(0.1)
+    modbus.write_register(0, 0b111, 2)
+    modbus.write_register(0, 0b1111, 2)
+    modbus.write_register(0, 0b101111, 2)
+    modbus.write_register(0, 0b1101111, 2)
+
+@app.route('/api/wp/stop-motor', methods=['GET'])
+def stop_motor():
+    modbus.write_register(0, 0, 2)
+
+#Currently not working
+@app.route('/api/wp/reverse-motor', methods=['GET'])
+def reverse_motor():
+    modbus.write_register(0, 0, 2)
+
+@app.route('/api/wp/set-frequency', methods=['POST'])
+def set_frequency():
+    """Set the VFD frequency based on the provided value"""
+    try:
+        data = request.get_json()
+        if data is None:
+            return jsonify({"status": "error", "message": "No JSON data received"}), 400
+        
+        frequency = data.get('frequency')
+        if frequency is None:
+            return jsonify({"status": "error", "message": "No frequency value provided"}), 400
+        
+        # Convert to integer and ensure it's within valid range
+        frequency = int(frequency)
+        if -20000 <= frequency <= 20000:  # Allow negative values for reverse
+            try:
+                modbus.write_register(1, frequency, 2)
+                info(f"Successfully set frequency to {frequency} ({(frequency * 60/20000):.1f} Hz)")
+                return jsonify({
+                    "status": "success",
+                    "message": "Frequency set successfully",
+                    "value": frequency
+                }), 200
+            except Exception as e:
+                error(f"Modbus error writing frequency: {str(e)}")
+                return jsonify({
+                    "status": "error",
+                    "message": f"Modbus error: {str(e)}"
+                }), 500
+        else:
+            return jsonify({
+                "status": "error",
+                "message": f"Frequency value {frequency} is out of range (-20000 to 20000)"
+            }), 400
+            
+    except Exception as e:
+        error(f"Error in set_frequency: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+# Currently Not Working
+@app.route('/api/wp/revese-frequency', methods=['POST'])
+def reverse_frequency():
+    """Set the VFD frequency based on the provided value"""
+    try:
+        data = request.get_json()
+        if data is None:
+            return jsonify({"status": "error", "message": "No JSON data received"}), 400
+        
+        frequency = data.get('frequency')
+        if frequency is None:
+            return jsonify({"status": "error", "message": "No frequency value provided"}), 400
+        
+        # Convert to integer and ensure it's within valid range
+        frequency = int(frequency)
+        if -20000 <= frequency <= 20000:  # Allow negative values for reverse
+            try:
+                modbus.write_register(1, frequency, 2)
+                info(f"Successfully set frequency to {frequency} ({(frequency * 60/20000):.1f} Hz)")
+                return jsonify({
+                    "status": "success",
+                    "message": "Frequency set successfully",
+                    "value": frequency
+                }), 200
+            except Exception as e:
+                error(f"Modbus error writing frequency: {str(e)}")
+                return jsonify({
+                    "status": "error",
+                    "message": f"Modbus error: {str(e)}"
+                }), 500
+        else:
+            return jsonify({
+                "status": "error",
+                "message": f"Frequency value {frequency} is out of range (-20000 to 20000)"
+            }), 400
+            
+    except Exception as e:
+        error(f"Error in set_frequency: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+'''
+    HELPER FUNCTIONS
+'''
 
 def handle_modbus_errors(f):
     @wraps(f)
@@ -151,8 +266,10 @@ def format_response(value, name, unit="", scale_factor=1):
         }
     })
 
+
+
 '''
-OPERATING DATA REGISTERS
+OPERATING DATA REGISTERS (CUTTER FACE)
 '''
 
 @app.route('/api/data/speed-dir', methods=['GET'])
@@ -226,7 +343,7 @@ def get_mot_therm_stress():
     return format_response(mot_therm_stress, "Motor Thermal Stress", "%")
 
 '''
-FAULT HISTORY REGISTERS
+FAULT HISTORY REGISTERS (CUTTER FACE)
 '''
 
 @app.route('/api/fault/latest-fault', methods=['GET'])
@@ -278,21 +395,6 @@ def get_status_at_fault():
     status_at_fault = modbus.read_register(409, 1)
     return format_response(status_at_fault, "Status at Fault", "code")
 
-@app.route('/health', methods=['GET'])
-def health_check():
-    """API health check endpoint"""
-    try:
-        modbus.read_register(101)
-        return jsonify({
-            "status": "healthy",
-            "message": "API is running and Modbus connection is active"
-        })
-    except Exception as e:
-        return jsonify({
-            "status": "unhealthy",
-            "message": f"Modbus connection error: {str(e)}"
-        }), 503
-
 
 @app.route('/api/data/operating', methods=['GET'])
 def get_operating_data():
@@ -302,6 +404,136 @@ def get_operating_data():
     except Exception as e:
         error(f"Error fetching operating data: {str(e)}")
         return jsonify({'error': str(e)}), 500
+    
+
+
+'''
+OPERATING DATA REGISTERS (WATER PUMP)
+'''
+
+@app.route('/api/wp/data/speed-dir', methods=['GET'])
+@handle_modbus_errors
+def get_speed_dir():
+    """Get motor speed and direction (-30000 to 30000 rpm)"""
+    speed = modbus.read_register(100, 1)
+    return format_response(speed, "Speed & Direction", "rpm")
+
+@app.route('/api/wp/data/output-frequency', methods=['GET'])
+@handle_modbus_errors
+def get_output_freq():
+    """Get output frequency (0.0 - 500Hz)"""
+    frequency = modbus.read_register(102, 1)
+    return format_response(frequency, "Output Frequency", "Hz", 0.1)
+
+@app.route('/api/wp/data/current', methods=['GET'])
+@handle_modbus_errors
+def get_current():
+    """Get current (0.0 - 2.0 * I2hd)"""
+    current = modbus.read_register(103, 1)
+    return format_response(current, "Current", "A", 0.1)
+
+@app.route('/api/wp/data/torque', methods=['GET'])
+@handle_modbus_errors
+def get_torque():
+    """Get torque (-200 to 200%)"""
+    torque = modbus.read_register(104, 1)
+    return format_response(torque, "Torque", "%")
+
+@app.route('/api/wp/data/power', methods=['GET'])
+@handle_modbus_errors
+def get_power():
+    """Get power output"""
+    power = modbus.read_register(105, 1)
+    return format_response(power, "Power", "kW", 0.1)
+
+@app.route('/api/wp/data/dc-bus-voltage', methods=['GET'])
+@handle_modbus_errors
+def get_dc_bus_voltage():
+    """Get DC bus voltage"""
+    dc_bus_voltage = modbus.read_register(106, 1)
+    return format_response(dc_bus_voltage, "DC Bus Voltage", "V")
+
+@app.route('/api/wp/data/output-voltage', methods=['GET'])
+@handle_modbus_errors
+def get_output_voltage():
+    """Get output voltage"""
+    output_voltage = modbus.read_register(108, 1)
+    return format_response(output_voltage, "Output Voltage", "V")
+
+@app.route('/api/wp/data/drive-temp', methods=['GET'])
+@handle_modbus_errors
+def get_drive_temp():
+    """Get drive temperature"""
+    drive_temp = modbus.read_register(109, 1)
+    return format_response(drive_temp, "Drive Temperature", "°C")
+
+@app.route('/api/wp/data/drive-cb-temp', methods=['GET'])
+@handle_modbus_errors
+def get_cb_temp():
+    """Get drive control board temperature"""
+    cb_temp = modbus.read_register(149, 1)
+    return format_response(cb_temp, "Drive CB Temperature", "°C")
+
+@app.route('/api/wp/data/mot-therm-stress', methods=['GET'])
+@handle_modbus_errors
+def get_mot_therm_stress():
+    """Get motor thermal stress level"""
+    mot_therm_stress = modbus.read_register(152, 1)
+    return format_response(mot_therm_stress, "Motor Thermal Stress", "%")
+
+'''
+FAULT HISTORY REGISTERS (WATER PUMP)
+'''
+
+@app.route('/api/wp/fault/latest-fault', methods=['GET'])
+@handle_modbus_errors
+def get_latest_fault():
+    """Get latest fault code"""
+    latest_fault = modbus.read_register(401, 1)
+    return format_response(latest_fault, "Latest Fault", "code")
+
+@app.route('/api/wp/fault/speed-at-fault', methods=['GET'])
+@handle_modbus_errors
+def get_speed_at_fault():
+    """Get speed at time of fault"""
+    speed_at_fault = modbus.read_register(404, 1)
+    return format_response(speed_at_fault, "Speed at Fault", "rpm")
+
+@app.route('/api/wp/fault/freq-at-fault', methods=['GET'])
+@handle_modbus_errors
+def get_freq_at_fault():
+    """Get frequency at time of fault"""
+    freq_at_fault = modbus.read_register(405, 1)
+    return format_response(freq_at_fault, "Frequency at Fault", "Hz", 0.1)
+
+@app.route('/api/wp/fault/voltage-at-fault', methods=['GET'])
+@handle_modbus_errors
+def get_voltage_at_fault():
+    """Get voltage at time of fault"""
+    voltage_at_fault = modbus.read_register(406, 1)
+    return format_response(voltage_at_fault, "Voltage at Fault", "V")
+
+@app.route('/api/wp/fault/current-at-fault', methods=['GET'])
+@handle_modbus_errors
+def get_current_at_fault():
+    """Get current at time of fault"""
+    current_at_fault = modbus.read_register(407, 1)
+    return format_response(current_at_fault, "Current at Fault", "A", 0.1)
+
+@app.route('/api/wp/fault/torque-at-fault', methods=['GET'])
+@handle_modbus_errors
+def get_torque_at_fault():
+    """Get torque at time of fault"""
+    torque_at_fault = modbus.read_register(408, 1)
+    return format_response(torque_at_fault, "Torque at Fault", "%")
+
+@app.route('/api/wp/fault/status-at-fault', methods=['GET'])
+@handle_modbus_errors
+def get_status_at_fault():
+    """Get status at time of fault"""
+    status_at_fault = modbus.read_register(409, 1)
+    return format_response(status_at_fault, "Status at Fault", "code")
+
 
 @app.route('/api/wp/data/operating', methods=['GET'])
 def get_operating_data():
@@ -311,6 +543,25 @@ def get_operating_data():
     except Exception as e:
         error(f"Error fetching operating data for waterpump: {str(e)}")
         return jsonify({'error': str(e)}), 500
+    
+
+'''
+HEALTH CHECK ENDPOINTS
+'''
+@app.route('/health', methods=['GET'])
+def health_check():
+    """API health check endpoint"""
+    try:
+        modbus.read_register(101, 1)
+        return jsonify({
+            "status": "healthy",
+            "message": "API is running and Modbus connection is active"
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "unhealthy",
+            "message": f"Modbus connection error: {str(e)}"
+        }), 503
 
 if __name__ == '__main__':
     run_server()
