@@ -1,0 +1,91 @@
+1740858452: mosquitto version 2.0.20 starting
+1740858452: Config loaded from /mosquitto/config/mosquitto.conf.
+1740858452: Opening ipv4 listen socket on port 1883.
+1740858452: Opening ipv6 listen socket on port 1883.
+1740858452: mosquitto version 2.0.20 running
+1740859166: New connection from 192.168.65.1:38437 on port 1883.
+1740859166: New client connected from 192.168.65.1:38437 as mqtt-explorer-7eb20e3c (p2, c1, k60).
+1740859178: Client mqtt-explorer-7eb20e3c disconnected.
+1740859501: New connection from 192.168.65.1:31475 on port 1883.
+1740859501: New client connected from 192.168.65.1:31475 as mqtt-explorer-7eb20e3c (p2, c1, k60).
+1740859503: Client mqtt-explorer-7eb20e3c disconnected.
+1740859520: New connection from 192.168.65.1:41942 on port 1883.
+1740859520: Client <unknown> disconnected due to protocol error.
+1740859543: New connection from 192.168.65.1:41005 on port 1883.
+1740859543: New client connected from 192.168.65.1:41005 as mqtt-explorer-7eb20e3c (p2, c1, k60).
+1740859747: mosquitto version 2.0.20 terminating
+1740859747: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1740859906: mosquitto version 2.0.20 starting
+1740859906: Config loaded from /mosquitto/config/mosquitto.conf.
+1740859906: Opening ipv4 listen socket on port 1883.
+1740859906: Opening ipv6 listen socket on port 1883.
+1740859906: mosquitto version 2.0.20 running
+1740860003: New connection from 192.168.65.1:38924 on port 1883.
+1740860003: New client connected from 192.168.65.1:38924 as mqtt-explorer-7eb20e3c (p2, c1, k60).
+1740860005: Client mqtt-explorer-7eb20e3c disconnected.
+1740861366: New connection from 192.168.65.1:58626 on port 1883.
+1740861366: New client connected from 192.168.65.1:58626 as mqtt-explorer-7eb20e3c (p2, c1, k60).
+1740861378: Client mqtt-explorer-7eb20e3c disconnected.
+1740861417: New connection from 192.168.65.1:44516 on port 1883.
+1740861417: New client connected from 192.168.65.1:44516 as mqtt-explorer-7eb20e3c (p2, c1, k60).
+1740861707: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1740861833: Client mqtt-explorer-7eb20e3c disconnected.
+1740861964: New connection from 192.168.65.1:35932 on port 1883.
+1740861964: New connection from 192.168.65.1:28611 on port 1883.
+1740861964: New client connected from 192.168.65.1:35932 as auto-C7A957C6-8CEC-CAED-EFBE-4CB5658BE5E6 (p2, c1, k60).
+1740861964: New client connected from 192.168.65.1:28611 as auto-3A88250B-0747-96D1-B36E-74D27694CA74 (p2, c1, k60).
+1740861964: Client auto-C7A957C6-8CEC-CAED-EFBE-4CB5658BE5E6 closed its connection.
+1740861964: Client auto-3A88250B-0747-96D1-B36E-74D27694CA74 closed its connection.
+1740861965: New connection from 192.168.65.1:19721 on port 1883.
+1740861965: Client <unknown> closed its connection.
+1740861965: New connection from 192.168.65.1:63920 on port 1883.
+1740861965: New client connected from 192.168.65.1:63920 as auto-D77B3F13-3D75-8768-D29C-855EEA17A9E7 (p2, c1, k60).
+1740861966: Client auto-D77B3F13-3D75-8768-D29C-855EEA17A9E7 closed its connection.
+1740861993: New connection from 192.168.65.1:54409 on port 1883.
+1740861993: New client connected from 192.168.65.1:54409 as mqtt-explorer-7eb20e3c (p2, c1, k60).
+1740862008: New connection from 192.168.65.1:22266 on port 1883.
+1740862008: New connection from 192.168.65.1:44884 on port 1883.
+1740862008: New client connected from 192.168.65.1:22266 as auto-C73AD2F0-F596-F325-D90F-6143AE19C04C (p2, c1, k60).
+1740862008: New client connected from 192.168.65.1:44884 as auto-F4527D02-FC81-F691-0F26-1EE46B105D27 (p2, c1, k60).
+1740862008: Client auto-F4527D02-FC81-F691-0F26-1EE46B105D27 closed its connection.
+1740862009: Client auto-C73AD2F0-F596-F325-D90F-6143AE19C04C closed its connection.
+1740862986: New connection from 192.168.65.1:53081 on port 1883.
+1740862986: New connection from 192.168.65.1:18797 on port 1883.
+1740862986: New client connected from 192.168.65.1:53081 as auto-909DA3F1-6A77-A874-A3C8-56813F521AC9 (p2, c1, k60).
+1740862986: New client connected from 192.168.65.1:18797 as auto-36081BA3-5762-30AB-6973-80475D8BF583 (p2, c1, k60).
+1740862986: Client auto-909DA3F1-6A77-A874-A3C8-56813F521AC9 closed its connection.
+1740862987: Client auto-36081BA3-5762-30AB-6973-80475D8BF583 closed its connection.
+1740863004: New connection from 192.168.65.1:34061 on port 1883.
+1740863004: New connection from 192.168.65.1:58694 on port 1883.
+1740863004: New client connected from 192.168.65.1:34061 as auto-3110C14F-9610-5E14-55C4-52F8BE520AE6 (p2, c1, k60).
+1740863004: New client connected from 192.168.65.1:58694 as auto-BC3CF9E6-83EF-85BC-5900-99479B8B6028 (p2, c1, k60).
+1740863004: Client auto-3110C14F-9610-5E14-55C4-52F8BE520AE6 closed its connection.
+1740863004: Client auto-BC3CF9E6-83EF-85BC-5900-99479B8B6028 closed its connection.
+1740863005: New connection from 192.168.65.1:49056 on port 1883.
+1740863005: Client <unknown> closed its connection.
+1740863005: New connection from 192.168.65.1:47281 on port 1883.
+1740863005: New client connected from 192.168.65.1:47281 as auto-F0F31D16-58FF-8E3E-A71B-349C11E53BB0 (p2, c1, k60).
+1740863006: Client auto-F0F31D16-58FF-8E3E-A71B-349C11E53BB0 closed its connection.
+1740863018: New connection from 192.168.65.1:21433 on port 1883.
+1740863018: New connection from 192.168.65.1:29136 on port 1883.
+1740863018: New client connected from 192.168.65.1:21433 as auto-492034B9-6A56-3959-C6A1-6B0D5CA54964 (p2, c1, k60).
+1740863018: New client connected from 192.168.65.1:29136 as auto-2058B1BA-40EC-8324-C2F5-7948E33D1C00 (p2, c1, k60).
+1740863018: Client auto-2058B1BA-40EC-8324-C2F5-7948E33D1C00 closed its connection.
+1740863018: Client auto-492034B9-6A56-3959-C6A1-6B0D5CA54964 closed its connection.
+1740863019: New connection from 192.168.65.1:36039 on port 1883.
+1740863019: Client <unknown> closed its connection.
+1740863019: New connection from 192.168.65.1:61565 on port 1883.
+1740863019: New client connected from 192.168.65.1:61565 as auto-6C445C68-DA34-5336-9E48-828459BBCC91 (p2, c1, k60).
+1740863020: Client auto-6C445C68-DA34-5336-9E48-828459BBCC91 closed its connection.
+1740863026: New connection from 192.168.65.1:16797 on port 1883.
+1740863026: New connection from 192.168.65.1:27820 on port 1883.
+1740863026: New client connected from 192.168.65.1:16797 as auto-C74A707E-0B75-0EEC-D83A-F75F9AFCB494 (p2, c1, k60).
+1740863026: New client connected from 192.168.65.1:27820 as auto-CEE321DB-4B7D-9C5A-0972-CCA32AF18D1D (p2, c1, k60).
+1740863026: Client auto-C74A707E-0B75-0EEC-D83A-F75F9AFCB494 closed its connection.
+1740863027: Client auto-CEE321DB-4B7D-9C5A-0972-CCA32AF18D1D closed its connection.
+1740863036: New connection from 192.168.65.1:21291 on port 1883.
+1740863036: New connection from 192.168.65.1:53857 on port 1883.
+1740863036: New client connected from 192.168.65.1:21291 as auto-20D33645-748F-397F-3C3E-95773FB7EB38 (p2, c1, k60).
+1740863036: New client connected from 192.168.65.1:53857 as auto-FCB1F9DE-D626-5F79-7812-26370F5D8C67 (p2, c1, k60).
+1740863036: Client auto-20D33645-748F-397F-3C3E-95773FB7EB38 closed its connection.
+1740863037: Client auto-FCB1F9DE-D626-5F79-7812-26370F5D8C67 closed its connection.

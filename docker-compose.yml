@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  mqtt-broker:
+    image: eclipse-mosquitto:latest
+    container_name: mqtt-broker
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./docker/mqtt/config:/mosquitto/config
+      - ./docker/mqtt/data:/mosquitto/data
+      - ./docker/mqtt/log:/mosquitto/log
+    networks:
+      - watdig-network
+    restart: unless-stopped
+
+  # This doesn't work and I don't think we need it to work either
+  watdig-app:
+    build: .
+    container_name: watdig-app
+    environment:
+      - MQTT_BROKER_HOST=mqtt-broker
+      - MQTT_BROKER_PORT=1883
+    volumes:
+      - .:/app
+    depends_on:
+      - mqtt-broker
+    networks:
+      - watdig-network
+
+networks:
+  watdig-network:
+    driver: bridge 
