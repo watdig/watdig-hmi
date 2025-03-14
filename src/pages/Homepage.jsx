@@ -6,6 +6,8 @@ import DataLogging from './DataLogging';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
 
+import TbmMonitor from "./TbmMonitor";
+
 const NavBar = styled.nav`
   position: fixed;
   top: 0;
@@ -127,7 +129,7 @@ const ControlRow = styled.div`
   justify-content: space-between;
 `;
 
-const VitalsDashboard = () => {
+const Homepage = () => {
   const [speed, setSpeed] = useState(0);
   const [frequency, setFrequency] = useState(0);
   const [oilTemp, setOilTemp] = useState(0);
@@ -175,15 +177,6 @@ const VitalsDashboard = () => {
       console.error("Error fetching speed:", error);
     }
   };
-
-  // useEffect to fetch speed data at regular intervals
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchSpeed();
-    }, 2000); // Fetch speed every 2 seconds
-
-    return () => clearInterval(interval); // Cleanup on unmount
-  }, []);
 
   const renderGauges = () => {
     console.log('Active Tab:', activeTab);
@@ -304,7 +297,7 @@ const VitalsDashboard = () => {
           className={activeTab === 'Cutter Face VFD' ? 'active' : ''} 
           onClick={() => setActiveTab('Cutter Face VFD')}
         >
-          Cutter Face VFD
+          TBM Monitor
         </NavItem>
         <NavItem 
           className={activeTab === 'Water Pump VFD' ? 'active' : ''} 
@@ -337,10 +330,11 @@ const VitalsDashboard = () => {
           Data Logging
         </NavItem>
       </NavBar>
-      <GaugeGrid>
-        {renderGauges()}
-      </GaugeGrid>
-      {activeTab === 'datalogging' && <DataLogging />}
+      
+      {activeTab === 'Cutter Face VFD' && (
+        <TbmMonitor/>
+      )}
+
       {activeTab === 'controls' && (
         <ControlPanel>
           <div>
@@ -359,13 +353,13 @@ const VitalsDashboard = () => {
                 </ControlButton>
                 <ControlButton 
                   className="stop"
-                  onClick={handleStopMotor} // Call the stop motor handler
+                  onClick={handleStopMotor}
                 >
                   Stop Motor
                 </ControlButton>
                 <ControlButton 
                   className="stop"
-                  onClick={handleReverseMotor} // Call the reverse motor handler
+                  onClick={handleReverseMotor}
                 >
                   Reverse Motor
                 </ControlButton>
@@ -436,8 +430,10 @@ const VitalsDashboard = () => {
           </div>
         </ControlPanel>
       )}
+
+      {activeTab === 'datalogging' && <DataLogging />}
     </div>
   );
 };
 
-export default VitalsDashboard;
+export default Homepage;
