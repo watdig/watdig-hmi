@@ -46,6 +46,21 @@ const TbmModel = () => {
   const [cutterPopupTimer, setCutterPopupTimer] = useState(null);
   const [waterPumpPopupTimer, setWaterPumpPopupTimer] = useState(null);
   
+  // Add jacking frame state
+  const [jackingFramePosition, setJackingFramePosition] = useState(0); // 0-100 percentage
+  const [jackingFrameStatus, setJackingFrameStatus] = useState("stopped"); // "extending", "stopped", "retracting"
+  
+  // Add oil temperature state
+  const [oilTemperature, setOilTemperature] = useState(65); // Default temperature in Celsius
+  const [oilTempStatus, setOilTempStatus] = useState("normal"); // "normal", "warning", "critical"
+  
+  // Add load sensor states
+  const [loadSensors, setLoadSensors] = useState([
+    { id: 1, position: 'top', value: 0, status: 'normal' },
+    { id: 2, position: 'left', value: 0, status: 'normal' },
+    { id: 3, position: 'right', value: 0, status: 'normal' }
+  ]);
+  
   // Animate cutter head rotation based on RPM
   useEffect(() => {
     if (!powerOn || rpm === 0) return;
@@ -56,6 +71,80 @@ const TbmModel = () => {
     
     return () => clearInterval(intervalId);
   }, [powerOn, rpm]);
+
+  // Add oil temperature monitoring effect
+  useEffect(() => {
+    if (!powerOn) return;
+    
+    // Simulate temperature fluctuations when system is running
+    const intervalId = setInterval(() => {
+      // Random fluctuation between -2 and +2 degrees
+      const fluctuation = (Math.random() * 4) - 2;
+      
+      // Add more temperature when jacking frame is active
+      const activityBonus = jackingFrameStatus !== "stopped" ? 0.5 : 0;
+      
+      setOilTemperature(prev => {
+        // Calculate new temperature with constraints
+        const newTemp = Math.max(20, Math.min(120, prev + fluctuation + activityBonus));
+        
+        // Update temperature status
+        if (newTemp > 95) {
+          setOilTempStatus("critical");
+        } else if (newTemp > 85) {
+          setOilTempStatus("warning");
+        } else {
+          setOilTempStatus("normal");
+        }
+        
+        return newTemp;
+      });
+    }, 2000);
+    
+    return () => clearInterval(intervalId);
+  }, [powerOn, jackingFrameStatus]);
+
+  // Add effect to simulate load sensor values
+  useEffect(() => {
+    if (!powerOn || !movStatus) {
+      // Reset load values when power is off or cutter is not moving
+      setLoadSensors(prev => prev.map(sensor => ({
+        ...sensor,
+        value: 0,
+        status: 'normal'
+      })));
+      return;
+    }
+    
+    const intervalId = setInterval(() => {
+      setLoadSensors(prev => prev.map(sensor => {
+        // Base load is proportional to RPM
+        const baseLoad = rpm * 0.5;
+        
+        // Random fluctuation between -10 and +10
+        const fluctuation = (Math.random() * 20) - 10;
+        
+        // Calculate new load value with constraints
+        const newValue = Math.max(0, Math.min(100, baseLoad + fluctuation));
+        
+        // Determine status based on load value
+        let status = 'normal';
+        if (newValue > 80) {
+          status = 'high';
+        } else if (newValue > 60) {
+          status = 'medium';
+        }
+        
+        return {
+          ...sensor,
+          value: Math.round(newValue),
+          status
+        };
+      }));
+    }, 1000);
+    
+    return () => clearInterval(intervalId);
+  }, [powerOn, movStatus, rpm]);
 
   // Handle power toggle for 480V and 120V
   const handlePowerToggle = (type) => {
@@ -80,14 +169,19 @@ const TbmModel = () => {
     if (confirm) {
       if (dialogType === "480v") {
         setPowerOn(!powerOn);
-        // If main power is turned off, also turn off 120V
+        // If main power is turned off, also turn off dependent systems
         if (powerOn) {
-          setHbvStatus(false);
           setMovStatus(false);
           setHmuStatus(false);
         }
       } else if (dialogType === "120v") {
         setHbvStatus(!hbvStatus);
+        // If 120V is turned off, also turn off 480V and dependent systems
+        if (hbvStatus) {
+          setPowerOn(false);
+          setMovStatus(false);
+          setHmuStatus(false);
+        }
       }
     }
     setShowPowerDialog(false);
@@ -173,6 +267,48 @@ const TbmModel = () => {
       if (waterPumpPopupTimer) clearTimeout(waterPumpPopupTimer);
     };
   }, [cutterPopupTimer, waterPumpPopupTimer]);
+
+  // Add jacking frame control functions
+  const extendJackingFrame = () => {
+    if (!powerOn) return;
+    setJackingFrameStatus("extending");
+  };
+
+  const stopJackingFrame = () => {
+    setJackingFrameStatus("stopped");
+  };
+
+  const retractJackingFrame = () => {
+    if (!powerOn) return;
+    setJackingFrameStatus("retracting");
+  };
+
+  // Update jacking frame position based on status
+  useEffect(() => {
+    if (jackingFrameStatus === "stopped") return;
+    
+    const intervalId = setInterval(() => {
+      setJackingFramePosition(prev => {
+        if (jackingFrameStatus === "extending") {
+          return Math.min(prev + 2, 100);
+        } else if (jackingFrameStatus === "retracting") {
+          return Math.max(prev - 2, 0);
+        }
+        return prev;
+      });
+    }, 100);
+    
+    return () => clearInterval(intervalId);
+  }, [jackingFrameStatus]);
+
+  // Auto-stop jacking frame when it reaches limits
+  useEffect(() => {
+    if (jackingFramePosition >= 100 && jackingFrameStatus === "extending") {
+      setJackingFrameStatus("stopped");
+    } else if (jackingFramePosition <= 0 && jackingFrameStatus === "retracting") {
+      setJackingFrameStatus("stopped");
+    }
+  }, [jackingFramePosition, jackingFrameStatus]);
 
   // CSS styles
   const styles = {
@@ -547,6 +683,210 @@ const TbmModel = () => {
       width: '100%',
       margin: '10px 0',
       accentColor: '#4CAF50'
+    },
+    // Add jacking frame styles
+    jackingFrame: {
+      width: '80px',
+      height: '100px',
+      backgroundColor: '#666',
+      position: 'absolute',
+      right: '-100px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '10px 0'
+    },
+    jackingFrameControls: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '5px',
+      marginBottom: '10px'
+    },
+    jackingFrameButton: {
+      padding: '5px',
+      fontSize: '10px',
+      borderRadius: '3px',
+      border: 'none',
+      cursor: 'pointer',
+      fontWeight: 'bold',
+      width: '60px'
+    },
+    jackingFrameExtendButton: {
+      backgroundColor: '#4CAF50',
+      color: 'white'
+    },
+    jackingFrameStopButton: {
+      backgroundColor: '#ff9800',
+      color: 'white'
+    },
+    jackingFrameRetractButton: {
+      backgroundColor: '#f44336',
+      color: 'white'
+    },
+    jackingFrameButtonDisabled: {
+      backgroundColor: '#555',
+      color: '#888',
+      cursor: 'not-allowed'
+    },
+    jackingFramePiston: {
+      width: '20px',
+      height: `${jackingFramePosition}px`,
+      backgroundColor: '#888',
+      position: 'absolute',
+      bottom: '10px',
+      maxHeight: '80px'
+    },
+    jackingFrameStatus: {
+      fontSize: '10px',
+      textAlign: 'center',
+      marginTop: '5px'
+    },
+    // Add oil temperature monitor styles
+    oilTempMonitor: {
+      width: '80px',
+      height: '60px',
+      backgroundColor: '#333',
+      position: 'absolute',
+      right: '-100px',
+      top: '-80px',
+      borderRadius: '5px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '5px',
+      border: '1px solid #555'
+    },
+    oilTempLabel: {
+      fontSize: '10px',
+      marginBottom: '5px',
+      textAlign: 'center'
+    },
+    oilTempValue: {
+      fontSize: '14px',
+      fontWeight: 'bold'
+    },
+    oilTempNormal: {
+      color: '#4CAF50'
+    },
+    oilTempWarning: {
+      color: '#ff9800'
+    },
+    oilTempCritical: {
+      color: '#f44336',
+      animation: 'pulse 1s infinite'
+    },
+    oilTempBar: {
+      width: '60px',
+      height: '8px',
+      backgroundColor: '#222',
+      borderRadius: '4px',
+      marginTop: '5px',
+      position: 'relative',
+      overflow: 'hidden'
+    },
+    oilTempFill: {
+      height: '100%',
+      backgroundColor: '#4CAF50',
+      width: `${(oilTemperature / 120) * 100}%`,
+      borderRadius: '4px',
+      transition: 'width 0.5s ease, background-color 0.5s ease'
+    },
+    // Update load sensor positions to form a triangle
+    loadSensor: {
+      width: '15px',
+      height: '15px',
+      borderRadius: '50%',
+      position: 'absolute',
+      border: '2px solid #333'
+    },
+    loadSensorTop: {
+      top: '15%',
+      left: '50%',
+      transform: 'translateX(-50%)'
+    },
+    loadSensorLeft: {
+      top: '70%',  // Moved down to form a triangle
+      left: '25%',
+      transform: 'translateY(-50%)'
+    },
+    loadSensorRight: {
+      top: '70%',  // Moved down to form a triangle
+      right: '25%',
+      transform: 'translateY(-50%)'
+    },
+    loadSensorNormal: {
+      backgroundColor: '#4CAF50'
+    },
+    loadSensorMedium: {
+      backgroundColor: '#ff9800'
+    },
+    loadSensorHigh: {
+      backgroundColor: '#f44336'
+    },
+    
+    // Replace boxes with a structured table
+    loadSensorTable: {
+      position: 'absolute',
+      left: '20px',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      backgroundColor: '#333',
+      borderRadius: '5px',
+      border: '1px solid #555',
+      width: '200px',
+      overflow: 'hidden',
+      zIndex: 10
+    },
+    loadSensorTableHeader: {
+      backgroundColor: '#444',
+      padding: '8px 10px',
+      borderBottom: '1px solid #555',
+      textAlign: 'center',
+      fontWeight: 'bold'
+    },
+    loadSensorTableRow: {
+      display: 'flex',
+      borderBottom: '1px solid #555',
+      padding: '5px 0'
+    },
+    loadSensorTableCell: {
+      padding: '5px 10px',
+      flex: 1,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    loadSensorTableLabel: {
+      flex: 2,
+      textAlign: 'left',
+      display: 'flex',
+      alignItems: 'center'
+    },
+    loadSensorTableValue: {
+      flex: 1,
+      textAlign: 'right',
+      fontWeight: 'bold'
+    },
+    loadSensorIndicator: {
+      width: '12px',
+      height: '12px',
+      borderRadius: '50%',
+      marginRight: '8px',
+      display: 'inline-block'
+    }
+  };
+
+  // Determine oil temperature fill color based on status
+  const getOilTempFillColor = () => {
+    switch (oilTempStatus) {
+      case "critical":
+        return '#f44336';
+      case "warning":
+        return '#ff9800';
+      default:
+        return '#4CAF50';
     }
   };
 
@@ -554,11 +894,66 @@ const TbmModel = () => {
     <div style={styles.tbmModelContainer}>
       {/* 2D TBM Visualization */}
       <div style={styles.tbmVisualization}>
+        {/* Load Sensor Table - moved outside the tbmBody to ensure visibility */}
+        <div style={styles.loadSensorTable}>
+          <div style={styles.loadSensorTableHeader}>
+            Cutter Load Sensors
+          </div>
+          {loadSensors.map(sensor => (
+            <div key={sensor.id} style={styles.loadSensorTableRow}>
+              <div style={styles.loadSensorTableLabel}>
+                <div style={{
+                  ...styles.loadSensorIndicator,
+                  ...(sensor.status === 'normal' ? styles.loadSensorNormal : 
+                     sensor.status === 'medium' ? styles.loadSensorMedium : 
+                     styles.loadSensorHigh)
+                }}></div>
+                {sensor.position.charAt(0).toUpperCase() + sensor.position.slice(1)}
+              </div>
+              <div style={{
+                ...styles.loadSensorTableValue,
+                color: sensor.status === 'normal' ? '#4CAF50' : 
+                       sensor.status === 'medium' ? '#ff9800' : '#f44336'
+              }}>
+                {sensor.value}%
+              </div>
+            </div>
+          ))}
+          <div style={{...styles.loadSensorTableRow, justifyContent: 'space-between', padding: '8px 10px'}}>
+            <div style={{fontSize: '12px', color: '#aaa'}}>Status:</div>
+            <div style={{
+              fontSize: '12px', 
+              fontWeight: 'bold',
+              color: loadSensors.some(s => s.status === 'high') ? '#f44336' : 
+                     loadSensors.some(s => s.status === 'medium') ? '#ff9800' : '#4CAF50'
+            }}>
+              {loadSensors.some(s => s.status === 'high') ? 'HIGH LOAD' : 
+               loadSensors.some(s => s.status === 'medium') ? 'MEDIUM LOAD' : 'NORMAL'}
+            </div>
+          </div>
+        </div>
+        
         <div style={styles.tbmBody}>
-          {/* Cutter Head */}
+          {/* Cutter Head with Load Sensors */}
           <div style={styles.cutterHead}>
             <div style={styles.cutterPattern}></div>
             <div style={styles.cutterCenter}></div>
+            
+            {/* Load Sensors on Cutter Head */}
+            {loadSensors.map(sensor => (
+              <div 
+                key={sensor.id}
+                style={{
+                  ...styles.loadSensor,
+                  ...(sensor.position === 'top' ? styles.loadSensorTop : 
+                     sensor.position === 'left' ? styles.loadSensorLeft : 
+                     styles.loadSensorRight),
+                  ...(sensor.status === 'normal' ? styles.loadSensorNormal : 
+                     sensor.status === 'medium' ? styles.loadSensorMedium : 
+                     styles.loadSensorHigh)
+                }}
+              ></div>
+            ))}
           </div>
           
           {/* Cabin */}
@@ -572,11 +967,69 @@ const TbmModel = () => {
           {/* Hydraulic Piston */}
           <div style={styles.hydraulicPiston}></div>
           
-          {/* Status Indicators */}
-          <div style={{...styles.statusIndicator, ...styles.powerIndicator}}></div>
-          <div style={{...styles.statusIndicator, ...styles.hbvIndicator}}></div>
-          <div style={{...styles.statusIndicator, ...styles.movIndicator}}></div>
-          <div style={{...styles.statusIndicator, ...styles.hmuIndicator}}></div>
+          {/* Oil Temperature Monitor */}
+          <div style={styles.oilTempMonitor}>
+            <div style={styles.oilTempLabel}>Oil Temp</div>
+            <div 
+              style={{
+                ...styles.oilTempValue,
+                ...(oilTempStatus === "normal" ? styles.oilTempNormal : 
+                   oilTempStatus === "warning" ? styles.oilTempWarning : 
+                   styles.oilTempCritical)
+              }}
+            >
+              {Math.round(oilTemperature)}°C
+            </div>
+            <div style={styles.oilTempBar}>
+              <div 
+                style={{
+                  ...styles.oilTempFill,
+                  backgroundColor: getOilTempFillColor()
+                }}
+              ></div>
+            </div>
+          </div>
+          
+          {/* Jacking Frame */}
+          <div style={styles.jackingFrame}>
+            <div style={styles.jackingFrameControls}>
+              <button 
+                style={{
+                  ...styles.jackingFrameButton,
+                  ...styles.jackingFrameExtendButton,
+                  ...(!powerOn && styles.jackingFrameButtonDisabled)
+                }}
+                onClick={extendJackingFrame}
+                disabled={!powerOn || jackingFramePosition >= 100}
+              >
+                Extend
+              </button>
+              <button 
+                style={{
+                  ...styles.jackingFrameButton,
+                  ...styles.jackingFrameStopButton
+                }}
+                onClick={stopJackingFrame}
+              >
+                Stop
+              </button>
+              <button 
+                style={{
+                  ...styles.jackingFrameButton,
+                  ...styles.jackingFrameRetractButton,
+                  ...(!powerOn && styles.jackingFrameButtonDisabled)
+                }}
+                onClick={retractJackingFrame}
+                disabled={!powerOn || jackingFramePosition <= 0}
+              >
+                Retract
+              </button>
+            </div>
+            <div style={styles.jackingFramePiston}></div>
+            <div style={styles.jackingFrameStatus}>
+              {jackingFrameStatus.charAt(0).toUpperCase() + jackingFrameStatus.slice(1)}
+            </div>
+          </div>
         </div>
       </div>
       
@@ -594,29 +1047,29 @@ const TbmModel = () => {
           <h3 style={styles.sectionHeader}>Power Controls</h3>
           <div style={styles.powerToggles}>
             <div style={styles.toggleGroup}>
-              <label>480V</label>
-              <button 
-                style={{
-                  ...styles.toggleButton,
-                  ...(powerOn ? styles.toggleButtonOn : styles.toggleButtonOff)
-                }}
-                onClick={() => handlePowerToggle("480v")}
-              >
-                {powerOn ? "ON" : "OFF"}
-              </button>
-            </div>
-            <div style={styles.toggleGroup}>
               <label>120V</label>
               <button 
                 style={{
                   ...styles.toggleButton,
-                  ...(hbvStatus ? styles.toggleButtonOn : styles.toggleButtonOff),
-                  ...(!powerOn && styles.toggleButtonDisabled)
+                  ...(hbvStatus ? styles.toggleButtonOn : styles.toggleButtonOff)
                 }}
-                onClick={() => powerOn && handlePowerToggle("120v")}
-                disabled={!powerOn}
+                onClick={() => handlePowerToggle("120v")}
               >
                 {hbvStatus ? "ON" : "OFF"}
+              </button>
+            </div>
+            <div style={styles.toggleGroup}>
+              <label>480V</label>
+              <button 
+                style={{
+                  ...styles.toggleButton,
+                  ...(powerOn ? styles.toggleButtonOn : styles.toggleButtonOff),
+                  ...(!hbvStatus && styles.toggleButtonDisabled)
+                }}
+                onClick={() => hbvStatus && handlePowerToggle("480v")}
+                disabled={!hbvStatus}
+              >
+                {powerOn ? "ON" : "OFF"}
               </button>
             </div>
             <div 
@@ -630,13 +1083,13 @@ const TbmModel = () => {
                 style={{
                   ...styles.toggleButton,
                   ...(movStatus ? styles.toggleButtonOn : styles.toggleButtonOff),
-                  ...(!powerOn || !hbvStatus ? styles.toggleButtonDisabled : {})
+                  ...(!powerOn && styles.toggleButtonDisabled)
                 }}
                 onClick={() => {
-                  if (!powerOn || !hbvStatus) return;
+                  if (!powerOn) return;
                   movStatus ? turnOffSystem("cutterface") : handleFrequencyToggle("cutterface");
                 }}
-                disabled={!powerOn || !hbvStatus}
+                disabled={!powerOn}
               >
                 {movStatus ? "ON" : "OFF"}
               </button>
@@ -673,15 +1126,15 @@ const TbmModel = () => {
                 style={{
                   ...styles.toggleButton,
                   ...(hmuStatus ? styles.toggleButtonOn : styles.toggleButtonOff),
-                  ...(!powerOn || !hbvStatus ? styles.toggleButtonDisabled : {})
+                  ...(!powerOn && styles.toggleButtonDisabled)
                 }}
                 onClick={() => {
-                  if (!powerOn || !hbvStatus) return;
+                  if (!powerOn) return;
                   hmuStatus ? turnOffSystem("waterpump") : handleFrequencyToggle("waterpump");
                 }}
                 onMouseEnter={handleWaterPumpPopupShow}
                 onMouseLeave={handleWaterPumpPopupHide}
-                disabled={!powerOn || !hbvStatus}
+                disabled={!powerOn}
               >
                 {hmuStatus ? "ON" : "OFF"}
               </button>
@@ -838,6 +1291,9 @@ const TbmModel = () => {
             <p>Are you sure you want to turn the {dialogType === "480v" ? "480V" : "120V"} power {dialogType === "480v" ? (powerOn ? "off" : "on") : (hbvStatus ? "off" : "on")}?</p>
             {dialogType === "480v" && powerOn && (
               <p style={{ color: '#f44336' }}>Warning: This will also turn off all dependent systems!</p>
+            )}
+            {dialogType === "120v" && hbvStatus && (
+              <p style={{ color: '#f44336' }}>Warning: This will also turn off 480V and all dependent systems!</p>
             )}
             <div style={styles.dialogButtons}>
               <button 
