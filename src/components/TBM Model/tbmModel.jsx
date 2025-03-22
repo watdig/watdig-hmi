@@ -61,6 +61,16 @@ const TbmModel = () => {
     { id: 3, position: 'right', value: 0, status: 'normal' }
   ]);
   
+  // Update sensor data state to include earth pressure sensor
+  const [sensorData, setSensorData] = useState({
+    actuatorA: { value: 0, unit: 'mm', status: 'normal' },
+    actuatorB: { value: 0, unit: 'mm', status: 'normal' },
+    actuatorC: { value: 0, unit: 'mm', status: 'normal' },
+    motorTemperature: { value: 0, unit: '°C', status: 'normal' },
+    flame: { value: 0, unit: '%', status: 'normal' },
+    earthPressure: { value: 0, unit: 'bar', status: 'normal' }
+  });
+  
   // Animate cutter head rotation based on RPM
   useEffect(() => {
     if (!powerOn || rpm === 0) return;
@@ -145,6 +155,94 @@ const TbmModel = () => {
     
     return () => clearInterval(intervalId);
   }, [powerOn, movStatus, rpm]);
+
+  // Effect to simulate sensor data changes
+  useEffect(() => {
+    if (!powerOn) {
+      // Reset sensor values when power is off
+      setSensorData({
+        actuatorA: { value: 0, unit: 'mm', status: 'normal' },
+        actuatorB: { value: 0, unit: 'mm', status: 'normal' },
+        actuatorC: { value: 0, unit: 'mm', status: 'normal' },
+        motorTemperature: { value: 0, unit: '°C', status: 'normal' },
+        flame: { value: 0, unit: '%', status: 'normal' },
+        earthPressure: { value: 0, unit: 'bar', status: 'normal' }
+      });
+      return;
+    }
+    
+    const intervalId = setInterval(() => {
+      setSensorData(prev => ({
+        actuatorA: {
+          value: Math.round(Math.max(0, Math.min(100, prev.actuatorA.value + (Math.random() * 10 - 5)))),
+          unit: 'mm',
+          status: getStatusFromValue(prev.actuatorA.value + (Math.random() * 10 - 5), 0, 100)
+        },
+        actuatorB: {
+          value: Math.round(Math.max(0, Math.min(100, prev.actuatorB.value + (Math.random() * 10 - 5)))),
+          unit: 'mm',
+          status: getStatusFromValue(prev.actuatorB.value + (Math.random() * 10 - 5), 0, 100)
+        },
+        actuatorC: {
+          value: Math.round(Math.max(0, Math.min(100, prev.actuatorC.value + (Math.random() * 10 - 5)))),
+          unit: 'mm',
+          status: getStatusFromValue(prev.actuatorC.value + (Math.random() * 10 - 5), 0, 100)
+        },
+        motorTemperature: {
+          value: Math.round(Math.max(20, Math.min(120, prev.motorTemperature.value + (Math.random() * 4 - 2)))),
+          unit: '°C',
+          status: getStatusFromValue(prev.motorTemperature.value + (Math.random() * 4 - 2), 20, 120, true)
+        },
+        flame: {
+          value: Math.round(Math.max(0, Math.min(100, prev.flame.value + (Math.random() * 8 - 3)))),
+          unit: '%',
+          status: getStatusFromValue(prev.flame.value + (Math.random() * 8 - 3), 0, 100, false, true)
+        },
+        earthPressure: {
+          value: parseFloat((Math.max(0, Math.min(10, prev.earthPressure.value + (Math.random() * 0.6 - 0.3)))).toFixed(1)),
+          unit: 'bar',
+          status: getStatusFromValue(prev.earthPressure.value + (Math.random() * 0.6 - 0.3), 0, 10, false, false, true)
+        }
+      }));
+    }, 1500);
+    
+    return () => clearInterval(intervalId);
+  }, [powerOn]);
+  
+  // Updated helper function to determine status based on value
+  const getStatusFromValue = (value, min, max, isTemperature = false, isFlame = false, isPressure = false) => {
+    if (isTemperature) {
+      if (value > 100) return 'critical';
+      if (value > 85) return 'warning';
+      return 'normal';
+    } else if (isFlame) {
+      if (value > 40) return 'critical'; // Flame is more sensitive
+      if (value > 20) return 'warning';
+      return 'normal';
+    } else if (isPressure) {
+      if (value > 7) return 'critical'; // Earth pressure thresholds
+      if (value > 5) return 'warning';
+      return 'normal';
+    } else {
+      if (value > 80) return 'high';
+      if (value > 60) return 'medium';
+      return 'normal';
+    }
+  };
+  
+  // Helper function to get color based on status
+  const getColorForStatus = (status) => {
+    switch (status) {
+      case 'critical':
+      case 'high':
+        return '#f44336';
+      case 'warning':
+      case 'medium':
+        return '#ff9800';
+      default:
+        return '#4CAF50';
+    }
+  };
 
   // Handle power toggle for 480V and 120V
   const handlePowerToggle = (type) => {
@@ -309,6 +407,43 @@ const TbmModel = () => {
       setJackingFrameStatus("stopped");
     }
   }, [jackingFramePosition, jackingFrameStatus]);
+
+  // Add E-Stop function
+  const triggerEStop = () => {
+    if (!powerOn && !hbvStatus) return; // Don't trigger if already off
+    
+    setEStopTripped(true);
+    setEStopReason("Manual E-Stop Activated");
+    
+    // Implement shutdown sequence with slight delays
+    // 1. Water pump
+    setHmuStatus(false);
+    setPressure(0);
+    
+    // 2. Cutter face (after 100ms)
+    setTimeout(() => {
+      setMovStatus(false);
+      setRpm(0);
+      
+      // 3. 480V (after another 100ms)
+      setTimeout(() => {
+        setPowerOn(false);
+        
+        // 4. 120V (after another 100ms)
+        setTimeout(() => {
+          setHbvStatus(false);
+        }, 100);
+      }, 100);
+    }, 100);
+  };
+  
+  // Reset E-Stop - only called when reset button is clicked
+  const resetEStop = () => {
+    setEStopTripped(false);
+    setEStopReason("");
+    // Note: This only resets the E-Stop status, not the power systems
+    // User will need to manually turn systems back on
+  };
 
   // CSS styles
   const styles = {
@@ -582,17 +717,38 @@ const TbmModel = () => {
       height: '20px',
       accentColor: '#4CAF50'
     },
+    estopButton: {
+      position: 'absolute',
+      bottom: '20px',
+      right: '20px',
+      width: '80px',
+      height: '80px',
+      borderRadius: '50%',
+      backgroundColor: '#f44336',
+      border: '5px solid #b71c1c',
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: '16px',
+      cursor: 'pointer',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+      transition: 'transform 0.1s, box-shadow 0.1s',
+      userSelect: 'none'
+    },
+    estopButtonPressed: {
+      transform: 'scale(0.95)',
+      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+    },
     estopIndicator: {
       marginTop: '20px',
       padding: '15px',
       borderRadius: '8px',
-      backgroundColor: '#2a2a2a',
+      backgroundColor: eStopTripped ? '#6e2a2a' : '#2a2a2a',
       textAlign: 'center',
-      transition: 'background-color 0.3s ease'
-    },
-    estopTriggered: {
-      backgroundColor: '#6e2a2a',
-      animation: 'pulse 1.5s infinite'
+      transition: 'background-color 0.3s ease',
+      animation: eStopTripped ? 'pulse 1.5s infinite' : 'none'
     },
     confirmationDialog: {
       position: 'fixed',
@@ -875,6 +1031,41 @@ const TbmModel = () => {
       borderRadius: '50%',
       marginRight: '8px',
       display: 'inline-block'
+    },
+    // Add sensor data card styles
+    sensorDataCard: {
+      backgroundColor: '#2a2a2a',
+      borderRadius: '8px',
+      padding: '15px',
+      marginBottom: '20px',
+      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)'
+    },
+    sensorDataHeader: {
+      fontSize: '18px',
+      fontWeight: 'bold',
+      marginBottom: '15px',
+      textAlign: 'center',
+      borderBottom: '1px solid #444',
+      paddingBottom: '10px'
+    },
+    sensorDataTable: {
+      width: '100%',
+      borderCollapse: 'collapse'
+    },
+    sensorDataRow: {
+      borderBottom: '1px solid #444'
+    },
+    sensorDataCell: {
+      padding: '10px 5px',
+      fontSize: '14px'
+    },
+    sensorDataName: {
+      textAlign: 'left',
+      fontWeight: 'normal'
+    },
+    sensorDataValue: {
+      textAlign: 'right',
+      fontWeight: 'bold'
     }
   };
 
@@ -997,19 +1188,21 @@ const TbmModel = () => {
                 style={{
                   ...styles.jackingFrameButton,
                   ...styles.jackingFrameExtendButton,
-                  ...(!powerOn && styles.jackingFrameButtonDisabled)
+                  ...(!powerOn || eStopTripped || jackingFramePosition >= 100 ? styles.jackingFrameButtonDisabled : {})
                 }}
                 onClick={extendJackingFrame}
-                disabled={!powerOn || jackingFramePosition >= 100}
+                disabled={!powerOn || eStopTripped || jackingFramePosition >= 100}
               >
                 Extend
               </button>
               <button 
                 style={{
                   ...styles.jackingFrameButton,
-                  ...styles.jackingFrameStopButton
+                  ...styles.jackingFrameStopButton,
+                  ...(jackingFrameStatus === "stopped" || eStopTripped ? styles.jackingFrameButtonDisabled : {})
                 }}
                 onClick={stopJackingFrame}
+                disabled={jackingFrameStatus === "stopped" || eStopTripped}
               >
                 Stop
               </button>
@@ -1017,10 +1210,10 @@ const TbmModel = () => {
                 style={{
                   ...styles.jackingFrameButton,
                   ...styles.jackingFrameRetractButton,
-                  ...(!powerOn && styles.jackingFrameButtonDisabled)
+                  ...(!powerOn || eStopTripped || jackingFramePosition <= 0 ? styles.jackingFrameButtonDisabled : {})
                 }}
                 onClick={retractJackingFrame}
-                disabled={!powerOn || jackingFramePosition <= 0}
+                disabled={!powerOn || eStopTripped || jackingFramePosition <= 0}
               >
                 Retract
               </button>
@@ -1031,14 +1224,27 @@ const TbmModel = () => {
             </div>
           </div>
         </div>
+        
+        {/* E-Stop Button */}
+        <button 
+          style={{
+            ...styles.estopButton,
+            ...(eStopTripped ? styles.estopButtonPressed : {})
+          }}
+          onClick={triggerEStop}
+          disabled={eStopTripped}
+        >
+          E-STOP
+        </button>
       </div>
       
       {/* Status Banner */}
       <div style={{
         ...styles.statusBanner,
-        ...(powerOn ? styles.statusBannerActive : styles.statusBannerInactive)
+        ...(powerOn ? styles.statusBannerActive : styles.statusBannerInactive),
+        ...(eStopTripped ? { backgroundColor: '#6e2a2a', animation: 'pulse 1.5s infinite' } : {})
       }}>
-        <h2>Status: {powerOn ? "Running" : "Offline"}</h2>
+        <h2>Status: {eStopTripped ? "EMERGENCY STOP" : (powerOn ? "Running" : "Offline")}</h2>
       </div>
 
       <div style={styles.tbmDashboard}>
@@ -1051,9 +1257,11 @@ const TbmModel = () => {
               <button 
                 style={{
                   ...styles.toggleButton,
-                  ...(hbvStatus ? styles.toggleButtonOn : styles.toggleButtonOff)
+                  ...(hbvStatus ? styles.toggleButtonOn : styles.toggleButtonOff),
+                  ...(eStopTripped ? styles.toggleButtonDisabled : {})
                 }}
                 onClick={() => handlePowerToggle("120v")}
+                disabled={eStopTripped}
               >
                 {hbvStatus ? "ON" : "OFF"}
               </button>
@@ -1064,32 +1272,26 @@ const TbmModel = () => {
                 style={{
                   ...styles.toggleButton,
                   ...(powerOn ? styles.toggleButtonOn : styles.toggleButtonOff),
-                  ...(!hbvStatus && styles.toggleButtonDisabled)
+                  ...(!hbvStatus || eStopTripped ? styles.toggleButtonDisabled : {})
                 }}
-                onClick={() => hbvStatus && handlePowerToggle("480v")}
-                disabled={!hbvStatus}
+                onClick={() => handlePowerToggle("480v")}
+                disabled={!hbvStatus || eStopTripped}
               >
                 {powerOn ? "ON" : "OFF"}
               </button>
             </div>
-            <div 
-              style={styles.toggleGroupWithHover}
-              onMouseEnter={handleCutterPopupShow}
-              onMouseLeave={handleCutterPopupHide}
-            >
+            <div style={styles.toggleGroupWithHover} ref={cutterButtonRef}>
               <label>Cutter Face</label>
               <button 
-                ref={cutterButtonRef}
                 style={{
                   ...styles.toggleButton,
                   ...(movStatus ? styles.toggleButtonOn : styles.toggleButtonOff),
-                  ...(!powerOn && styles.toggleButtonDisabled)
+                  ...(!powerOn || eStopTripped ? styles.toggleButtonDisabled : {})
                 }}
-                onClick={() => {
-                  if (!powerOn) return;
-                  movStatus ? turnOffSystem("cutterface") : handleFrequencyToggle("cutterface");
-                }}
-                disabled={!powerOn}
+                onClick={() => movStatus ? turnOffSystem("cutterface") : handleFrequencyToggle("cutterface")}
+                onMouseEnter={handleCutterPopupShow}
+                onMouseLeave={handleCutterPopupHide}
+                disabled={!powerOn || eStopTripped}
               >
                 {movStatus ? "ON" : "OFF"}
               </button>
@@ -1119,22 +1321,18 @@ const TbmModel = () => {
                 </div>
               )}
             </div>
-            <div style={styles.toggleGroupWithHover}>
+            <div style={styles.toggleGroupWithHover} ref={waterPumpButtonRef}>
               <label>Water Pump</label>
               <button 
-                ref={waterPumpButtonRef}
                 style={{
                   ...styles.toggleButton,
                   ...(hmuStatus ? styles.toggleButtonOn : styles.toggleButtonOff),
-                  ...(!powerOn && styles.toggleButtonDisabled)
+                  ...(!powerOn || eStopTripped ? styles.toggleButtonDisabled : {})
                 }}
-                onClick={() => {
-                  if (!powerOn) return;
-                  hmuStatus ? turnOffSystem("waterpump") : handleFrequencyToggle("waterpump");
-                }}
+                onClick={() => hmuStatus ? turnOffSystem("waterpump") : handleFrequencyToggle("waterpump")}
                 onMouseEnter={handleWaterPumpPopupShow}
                 onMouseLeave={handleWaterPumpPopupHide}
-                disabled={!powerOn}
+                disabled={!powerOn || eStopTripped}
               >
                 {hmuStatus ? "ON" : "OFF"}
               </button>
@@ -1167,21 +1365,28 @@ const TbmModel = () => {
           </div>
         </div>
 
-        {/* Pressure and RPM Gauges */}
-        <div style={styles.gaugesSection}>
-          <div style={styles.gauge}>
-            <h4>Pressure</h4>
-            <div style={styles.gaugeVisual}>
-              <div style={styles.gaugeValue}>{pressure} BAR</div>
-            </div>
-          </div>
-          
-          <div style={styles.gauge}>
-            <h4>RPM</h4>
-            <div style={styles.gaugeVisual}>
-              <div style={styles.gaugeValue}>{rpm} RPM</div>
-            </div>
-          </div>
+        {/* Below Ground Board Card */}
+        <div style={styles.sensorDataCard}>
+          <h3 style={styles.sensorDataHeader}>Below Ground Board</h3>
+          <table style={styles.sensorDataTable}>
+            <tbody>
+              {Object.entries(sensorData).map(([key, data]) => (
+                <tr key={key} style={styles.sensorDataRow}>
+                  <td style={{...styles.sensorDataCell, ...styles.sensorDataName}}>
+                    {key === 'earthPressure' ? 'Earth Pressure' : 
+                     key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                  </td>
+                  <td style={{
+                    ...styles.sensorDataCell, 
+                    ...styles.sensorDataValue,
+                    color: getColorForStatus(data.status)
+                  }}>
+                    {data.value} {data.unit}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         {/* Steering Controls */}
@@ -1275,16 +1480,29 @@ const TbmModel = () => {
       </div>
 
       {/* E-Stop Indicator */}
-      <div style={{
-        ...styles.estopIndicator,
-        ...(eStopTripped && styles.estopTriggered)
-      }}>
-        <h3>E-Stop Status: {eStopTripped ? "TRIGGERED" : "Normal"}</h3>
-        {eStopTripped && <p>Reason: {eStopReason}</p>}
+      <div style={styles.estopIndicator}>
+        <h3>Emergency Stop Status</h3>
+        <p>{eStopTripped ? "ACTIVATED: " + eStopReason : "Not Activated"}</p>
+        {eStopTripped && (
+          <button 
+            style={{
+              padding: '8px 15px',
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              marginTop: '10px',
+              cursor: 'pointer'
+            }}
+            onClick={resetEStop}
+          >
+            Reset E-Stop
+          </button>
+        )}
       </div>
 
       {/* Power Confirmation Dialog */}
-      {showPowerDialog && (
+      {showPowerDialog && !eStopTripped && (
         <div style={styles.confirmationDialog}>
           <div style={styles.dialogContent}>
             <h3>Confirm {dialogType === "480v" ? "480V" : "120V"} Power {dialogType === "480v" ? (powerOn ? "Off" : "On") : (hbvStatus ? "Off" : "On")}</h3>
@@ -1314,7 +1532,7 @@ const TbmModel = () => {
       )}
 
       {/* Frequency Selection Dialog */}
-      {showFrequencyDialog && (
+      {showFrequencyDialog && !eStopTripped && (
         <div style={styles.confirmationDialog}>
           <div style={styles.dialogContent}>
             <h3>Set {dialogType === "cutterface" ? "Cutter Face" : "Water Pump"} Frequency</h3>
@@ -1355,5 +1573,20 @@ const TbmModel = () => {
     </div>
   );
 };
+
+// Add keyframe animation for pulsing effect
+const pulseKeyframes = `
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+`;
+
+// Add the keyframes to the document
+const style = document.createElement('style');
+style.type = 'text/css';
+style.appendChild(document.createTextNode(pulseKeyframes));
+document.head.appendChild(style);
 
 export default TbmModel;
