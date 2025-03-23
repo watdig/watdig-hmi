@@ -10,7 +10,7 @@ const TbmVisualization = () => {
     powerOn, cutterRotation, steeringAngle, loadSensors,
     oilTemperature, oilTempStatus, jackingFramePosition,
     jackingFrameStatus, extendJackingFrame, stopJackingFrame,
-    retractJackingFrame, eStopTripped, triggerEStop
+    retractJackingFrame, eStopTripped, triggerEStop, rpm
   } = useTbmState();
 
   const styles = {
@@ -153,6 +153,26 @@ const TbmVisualization = () => {
     },
     loadSensorHigh: {
       backgroundColor: '#f44336'
+    },
+    motorEncoder: {
+      position: 'absolute',
+      left: '-75px',  // Align with cutterhead
+      top: '-80px',   // Position above cutterhead
+      width: '150px', // Same width as cutterhead
+      backgroundColor: '#333',
+      padding: '8px',
+      borderRadius: '5px',
+      textAlign: 'center'
+    },
+    encoderLabel: {
+      fontSize: '12px',
+      color: '#aaa',
+      marginBottom: '4px'
+    },
+    encoderValue: {
+      fontSize: '16px',
+      fontWeight: 'bold',
+      color: '#4CAF50'
     }
   };
 
@@ -162,6 +182,14 @@ const TbmVisualization = () => {
       <LoadSensorTable loadSensors={loadSensors} />
 
       <div style={styles.tbmBody}>
+        {/* Motor Encoder Box */}
+        <div style={styles.motorEncoder}>
+          <div style={styles.encoderLabel}>Motor Encoder</div>
+          <div style={styles.encoderValue}>
+            {rpm.toFixed(1)} RPM
+          </div>
+        </div>
+
         {/* Cutter Head with Load Sensors */}
         <div style={styles.cutterHead}>
           <div style={styles.cutterPattern}></div>
