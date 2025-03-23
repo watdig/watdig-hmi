@@ -2,43 +2,36 @@ import React from 'react';
 
 const OilTempMonitor = ({ temperature, status }) => {
   const styles = {
-    oilTempMonitor: {
-      width: '80px',
-      height: '60px',
-      backgroundColor: '#333',
+    oilTempContainer: {
       position: 'absolute',
-      right: '-100px',
-      top: '-80px',
+      right: '-300px',
+      top: '20px',
+      width: '100px',
+      backgroundColor: '#333',
+      padding: '8px',
       borderRadius: '5px',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '5px',
-      border: '1px solid #555'
-    },
-    oilTempLabel: {
-      fontSize: '10px',
-      marginBottom: '5px',
       textAlign: 'center'
     },
-    oilTempValue: {
-      fontSize: '14px',
+    label: {
+      fontSize: '12px',
+      color: '#aaa',
+      marginBottom: '3px'
+    },
+    value: {
+      fontSize: '20px',
       fontWeight: 'bold'
     },
-    oilTempBar: {
-      width: '60px',
-      height: '8px',
+    bar: {
+      width: '80%',
+      height: '4px',
       backgroundColor: '#222',
-      borderRadius: '4px',
-      marginTop: '5px',
-      position: 'relative',
+      margin: '8px auto',
+      borderRadius: '2px',
       overflow: 'hidden'
     },
-    oilTempFill: {
+    barFill: {
       height: '100%',
       width: `${(temperature / 120) * 100}%`,
-      borderRadius: '4px',
       transition: 'width 0.5s ease, background-color 0.5s ease'
     }
   };
@@ -55,17 +48,17 @@ const OilTempMonitor = ({ temperature, status }) => {
   };
 
   return (
-    <div style={styles.oilTempMonitor}>
-      <div style={styles.oilTempLabel}>Oil Temp</div>
+    <div style={styles.oilTempContainer}>
+      <div style={styles.label}>Oil Temp</div>
       <div style={{
-        ...styles.oilTempValue,
+        ...styles.value,
         color: getStatusColor()
       }}>
         {Math.round(temperature)}°C
       </div>
-      <div style={styles.oilTempBar}>
+      <div style={styles.bar}>
         <div style={{
-          ...styles.oilTempFill,
+          ...styles.barFill,
           backgroundColor: getStatusColor()
         }}></div>
       </div>

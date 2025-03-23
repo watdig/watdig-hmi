@@ -3,6 +3,7 @@ import { useTbmState } from "./TbmStateContext";
 import LoadSensorTable from "./LoadSensorTable";
 import OilTempMonitor from "./OilTempMonitor";
 import JackingFrame from "./JackingFrame";
+import HpuControls from './HpuControls';
 
 const TbmVisualization = () => {
   const {
@@ -223,6 +224,8 @@ const TbmVisualization = () => {
       >
         E-STOP
       </button>
+
+      <HpuControls />
     </div>
   );
 };

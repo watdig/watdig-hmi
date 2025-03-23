@@ -78,6 +78,10 @@ export const TbmStateProvider = ({ children }) => {
     lastError: null
   });
 
+  // Add these to your state declarations
+  const [hpuEnabled, setHpuEnabled] = useState(false);
+  const [oilPressure, setOilPressure] = useState(0);
+
   // Animate cutter head rotation based on RPM
   useEffect(() => {
     if (!powerOn || rpm === 0) return;
@@ -399,22 +403,17 @@ export const TbmStateProvider = ({ children }) => {
     setEStopTripped(true);
     setEStopReason("Manual E-Stop Activated");
     
-    // Implement shutdown sequence with slight delays
-    setHmuStatus(false);
-    setPressure(0);
+    // Simply turn off 120V - everything else will shut down due to dependencies
+    setHbvStatus(false);
     
-    setTimeout(() => {
-      setMovStatus(false);
-      setRpm(0);
-      
-      setTimeout(() => {
-        setPowerOn(false);
-        
-        setTimeout(() => {
-          setHbvStatus(false);
-        }, 100);
-      }, 100);
-    }, 100);
+    // Reset all dependent states immediately
+    setMovStatus(false);
+    setHmuStatus(false);
+    setPowerOn(false);
+    setRpm(0);
+    setPressure(0);
+    setCutterFaceFrequency(0);
+    setWaterPumpFrequency(0);
   };
   
   // Reset E-Stop
@@ -524,6 +523,24 @@ export const TbmStateProvider = ({ children }) => {
     return () => clearInterval(pollInterval);
   }, [powerOn]);
 
+  // Add this effect to simulate oil pressure changes
+  useEffect(() => {
+    if (!powerOn || !hpuEnabled) {
+      setOilPressure(0);
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      const baseValue = 120; // Base pressure when system is running
+      const fluctuation = (Math.random() * 10) - 5; // Random fluctuation ±5 bar
+      const activityBonus = jackingFrameStatus !== "stopped" ? 20 : 0; // Pressure increase during activity
+      
+      setOilPressure(baseValue + fluctuation + activityBonus);
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [powerOn, hpuEnabled, jackingFrameStatus]);
+
   // Modify your value object to include the new Modbus functions
   const value = {
     // State
@@ -609,7 +626,9 @@ export const TbmStateProvider = ({ children }) => {
         console.error('Error toggling power:', error);
         // Handle the error appropriately
       }
-    }
+    },
+    hpuEnabled, setHpuEnabled,
+    oilPressure, setOilPressure,
   };
 
   return (
