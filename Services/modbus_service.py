@@ -59,13 +59,13 @@ class ModbusConnection:
         error("Failed to connect after maximum retries")
         return False
 
-    def read_register(self, register: int, slaveID: int):
+    def read_register(self, register: int, slaveID: int, range: int = 1):
         try:
             if not self.client or not self.client.is_socket_open():
                 if not self.connect():
                     raise Exception("Failed to reconnect to Modbus device")
 
-            result = self.client.read_holding_registers(register, 1, slaveID)
+            result = self.client.read_holding_registers(register, range, slaveID)
 
             if result.isError():
                 raise Exception(f"Modbus error reading register {register}")
