@@ -1,17 +1,163 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTbmState } from '../TBM Model/TbmStateContext';
+import { 
+  CircularProgress, 
+  Snackbar, 
+  Alert
+} from '@mui/material';
 
 const ModbusControl = () => {
   const [mode, setMode] = useState('read');
-  const [unitId, setUnitId] = useState('');
+  const [unitId, setUnitId] = useState('1');
   const [register, setRegister] = useState('');
-  const [registerRange, setRegisterRange] = useState('');
+  const [registerRange, setRegisterRange] = useState('1');
   const [value, setValue] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
   const { modbusStatus } = useTbmState();
+
+  // Check Modbus connection status on component mount
+  useEffect(() => {
+    checkModbusStatus();
+  }, []);
+
+  const checkModbusStatus = async () => {
+    try {
+      const response = await axios.get('/health');
+      if (response.data.status === 'healthy') {
+        console.log('Modbus connection is active');
+      }
+    } catch (err) {
+      console.error('Modbus connection check failed:', err);
+      setError('Modbus connection is not available. Check server status.');
+    }
+  };
+
+  // Parse value with support for binary (0b), hex (0x), or decimal
+  const parseValue = (val) => {
+    if (typeof val !== 'string') return parseInt(val);
+    
+    if (val.toLowerCase().startsWith('0b')) {
+      return parseInt(val.substring(2), 2);
+    } else if (val.toLowerCase().startsWith('0x')) {
+      return parseInt(val.substring(2), 16);
+    } else {
+      return parseInt(val);
+    }
+  };
+
+  const handleRead = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setResult(null);
+    setLoading(true);
+
+    try {
+      // Parse register value - handle binary (0b...), hex (0x...), or decimal
+      let parsedRegister;
+      try {
+        parsedRegister = parseValue(register);
+        if (isNaN(parsedRegister)) {
+          throw new Error('Invalid register format');
+        }
+      } catch (err) {
+        throw new Error(`Invalid register format: ${err.message}`);
+      }
+
+      const response = await axios.get('/api/modbus/read', {
+        params: {
+          unitId: parseInt(unitId),
+          register: parsedRegister,
+          range: parseInt(registerRange)
+        }
+      });
+
+      setResult(response.data);
+      setSnackbar({
+        open: true,
+        message: 'Read operation successful',
+        severity: 'success'
+      });
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to read from Modbus';
+      setError(errorMsg);
+      setSnackbar({
+        open: true,
+        message: errorMsg,
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleWrite = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setResult(null);
+    setLoading(true);
+
+    try {
+      // Parse register value - handle binary (0b...), hex (0x...), or decimal
+      let parsedRegister;
+      try {
+        parsedRegister = parseValue(register);
+        if (isNaN(parsedRegister)) {
+          throw new Error('Invalid register format');
+        }
+      } catch (err) {
+        throw new Error(`Invalid register format: ${err.message}`);
+      }
+
+      // Parse the value - handle binary (0b...), hex (0x...), or decimal
+      let parsedValue;
+      try {
+        parsedValue = parseValue(value);
+        if (isNaN(parsedValue)) {
+          throw new Error('Invalid value format');
+        }
+      } catch (err) {
+        throw new Error(`Invalid value format: ${err.message}`);
+      }
+
+      const response = await axios.post('/api/modbus/write', {
+        unitId: parseInt(unitId),
+        register: parsedRegister,
+        value: parsedValue
+      });
+
+      setResult(response.data);
+      setSnackbar({
+        open: true,
+        message: 'Write operation successful',
+        severity: 'success'
+      });
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to write to Modbus';
+      setError(errorMsg);
+      setSnackbar({
+        open: true,
+        message: errorMsg,
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({
+      ...snackbar,
+      open: false
+    });
+  };
 
   const styles = {
     modbusCard: {
@@ -81,10 +227,6 @@ const ModbusControl = () => {
     resultContainer: {
       marginTop: '15px',
       padding: '10px',
-      backgroundColor: '#333',
-      borderRadius: '4px',
-      maxHeight: '200px',
-      overflowY: 'auto'
     },
     error: {
       color: '#ff6b6b',
@@ -107,50 +249,11 @@ const ModbusControl = () => {
       height: '10px',
       borderRadius: '50%',
       backgroundColor: props => props ? '#4CAF50' : '#f44336'
-    }
-  };
-
-  const handleRead = async (e) => {
-    e.preventDefault();
-    setError(null);
-    setResult(null);
-    setLoading(true);
-
-    try {
-      const response = await axios.get('/api/modbus/read', {
-        params: {
-          unitId: parseInt(unitId),
-          register: parseInt(register),
-          range: registerRange ? parseInt(registerRange) : 1
-        }
-      });
-
-      setResult(response.data);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to read from Modbus');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleWrite = async (e) => {
-    e.preventDefault();
-    setError(null);
-    setResult(null);
-    setLoading(true);
-
-    try {
-      const response = await axios.post('/api/modbus/write', {
-        unitId: parseInt(unitId),
-        register: parseInt(register),
-        value: parseInt(value)
-      });
-
-      setResult(response.data);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to write to Modbus');
-    } finally {
-      setLoading(false);
+    },
+    loadingContainer: {
+      display: 'flex',
+      justifyContent: 'center',
+      marginTop: '15px'
     }
   };
 
@@ -206,11 +309,11 @@ const ModbusControl = () => {
           <label style={styles.label}>Register:</label>
           <input
             style={styles.input}
-            type="number"
+            type="text"
             value={register}
             onChange={(e) => setRegister(e.target.value)}
+            placeholder="Dec, 0b, 0x"
             required
-            min="0"
           />
         </div>
 
@@ -223,7 +326,8 @@ const ModbusControl = () => {
               value={registerRange}
               onChange={(e) => setRegisterRange(e.target.value)}
               min="1"
-              placeholder="Optional"
+              max="100"
+              placeholder="1-100"
             />
           </div>
         )}
@@ -233,9 +337,10 @@ const ModbusControl = () => {
             <label style={styles.label}>Value:</label>
             <input
               style={styles.input}
-              type="number"
+              type="text"
               value={value}
               onChange={(e) => setValue(e.target.value)}
+              placeholder="Dec, 0b, 0x"
               required
             />
           </div>
@@ -247,11 +352,17 @@ const ModbusControl = () => {
             ...styles.button,
             ...(loading ? styles.buttonDisabled : {})
           }}
-          disabled={loading}
+          disabled={loading || !modbusStatus.connected}
         >
           {loading ? 'Processing...' : mode === 'read' ? 'Read' : 'Write'}
         </button>
       </form>
+
+      {loading && (
+        <div style={styles.loadingContainer}>
+          <CircularProgress size={24} style={{ color: '#4CAF50' }} />
+        </div>
+      )}
 
       {error && (
         <div style={styles.error}>
@@ -266,6 +377,21 @@ const ModbusControl = () => {
           </pre>
         </div>
       )}
+
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={6000} 
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity}
+          sx={{ width: '100%', backgroundColor: snackbar.severity === 'success' ? '#4caf50' : '#f44336', color: 'white' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </div>
   );
 };

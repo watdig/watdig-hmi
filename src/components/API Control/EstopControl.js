@@ -1,37 +1,67 @@
 import axios from 'axios';
 
-export const set120V = async () => {
+/**
+ * Set 120V power state
+ * @param {boolean} state - true to turn on (value 1), false to turn off (value 0)
+ * @returns {Promise<Object>} - Response with success status
+ */
+export const set120V = async (state) => {
     try {
-        await axios.post('/api/pm/set-120V');
+        const value = state ? 1 : 0;
+        const response = await axios.post('/api/pm/set-120V', { value });
+        console.log(`120V power set to ${state ? 'ON' : 'OFF'}`);
+        return { success: true, data: response.data };
     } catch (error) {
         console.error('Error setting 120V:', error);
         return { success: false, error };
     }
-}
+};
 
-export const set480V = async () => {
+/**
+ * Set 480V power state
+ * @param {boolean} state - true to turn on (value 1), false to turn off (value 0)
+ * @returns {Promise<Object>} - Response with success status
+ */
+export const set480V = async (state) => {
     try {
-        await axios.post('/api/pm/set-480V');
+        const value = state ? 1 : 0;
+        const response = await axios.post('/api/pm/set-480V', { value });
+        console.log(`480V power set to ${state ? 'ON' : 'OFF'}`);
+        return { success: true, data: response.data };
     } catch (error) {
         console.error('Error setting 480V:', error);
         return { success: false, error };
     }
-}
+};
 
+/**
+ * Activate emergency stop
+ * @returns {Promise<Object>} - Response with success status
+ */
 export const activateEstop = async () => {
     try {
-        const response = await axios.post('/api/pm/set-120V', { value: 1 });
-        return { success: true, data: response.data };
+        // Turn off both 120V and 480V power
+        await set120V(false);
+        await set480V(false);
+        
+        console.log('E-Stop activated');
+        return { success: true };
     } catch (error) {
         console.error('Error activating E-Stop:', error);
         return { success: false, error };
     }
 };
 
+/**
+ * Reset emergency stop
+ * @returns {Promise<Object>} - Response with success status
+ */
 export const resetEstop = async () => {
     try {
-        const response = await axios.post('/api/pm/set-120V', { value: 0 });
-        return { success: true, data: response.data };
+        // Just reset the E-Stop state, don't automatically turn power back on
+        // Power will need to be turned on manually after E-Stop reset
+        console.log('E-Stop reset');
+        return { success: true };
     } catch (error) {
         console.error('Error resetting E-Stop:', error);
         return { success: false, error };

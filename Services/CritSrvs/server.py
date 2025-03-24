@@ -27,6 +27,135 @@ def run_server():
 modbus = ModbusConnection()
 app = create_app()
 
+# Decorator for handling Modbus errors
+def handle_modbus_errors(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            error(f"Modbus error in {f.__name__}: {str(e)}")
+            return jsonify({
+                "status": "error",
+                "message": f"Modbus error: {str(e)}"
+            }), 500
+    return decorated_function
+
+# Helper function to format responses
+def format_response(value, name, unit, multiplier=1):
+    """Format a response with value, name, and unit"""
+    if value is None:
+        return jsonify({
+            "status": "error",
+            "message": f"Failed to read {name}"
+        }), 500
+    
+    # Apply multiplier if provided
+    if multiplier != 1:
+        value = value * multiplier
+    
+    return jsonify({
+        "status": "success",
+        "name": name,
+        "value": value,
+        "unit": unit
+    })
+
+'''
+    MODBUS CONTROL ENDPOINTS
+'''
+@app.route('/api/modbus/read', methods=['GET'])
+@handle_modbus_errors
+def read_modbus():
+    """Read from Modbus register with optional range"""
+    unit_id = request.args.get('unitId', type=int)
+    register = request.args.get('register', type=int)
+    range_val = request.args.get('range', default=1, type=int)
+    
+    if unit_id is None or register is None:
+        return jsonify({
+            "status": "error",
+            "message": "Missing required parameters: unitId and register"
+        }), 400
+    
+    # Limit range to prevent excessive reads
+    if range_val > 100:
+        return jsonify({
+            "status": "error",
+            "message": "Range cannot exceed 100 registers"
+        }), 400
+    
+    # Read the registers
+    try:
+        if range_val == 1:
+            value = modbus.read_register(register, unit_id)
+            info(f"Read register {register} from unit {unit_id}: {value}")
+            return jsonify({
+                "status": "success",
+                "register": register,
+                "unitId": unit_id,
+                "value": value
+            })
+        else:
+            values = []
+            for i in range(range_val):
+                value = modbus.read_register(register + i, unit_id)
+                values.append({"register": register + i, "value": value})
+            
+            info(f"Read {range_val} registers starting at {register} from unit {unit_id}")
+            return jsonify({
+                "status": "success",
+                "unitId": unit_id,
+                "startRegister": register,
+                "range": range_val,
+                "values": values
+            })
+    except Exception as e:
+        error(f"Error reading Modbus register: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": f"Error reading register: {str(e)}"
+        }), 500
+
+@app.route('/api/modbus/write', methods=['POST'])
+@handle_modbus_errors
+def write_modbus():
+    """Write to Modbus register"""
+    data = request.get_json()
+    
+    if data is None:
+        return jsonify({
+            "status": "error",
+            "message": "No JSON data received"
+        }), 400
+    
+    unit_id = data.get('unitId')
+    register = data.get('register')
+    value = data.get('value')
+    
+    if unit_id is None or register is None or value is None:
+        return jsonify({
+            "status": "error",
+            "message": "Missing required parameters: unitId, register, and value"
+        }), 400
+    
+    # Write to the register
+    try:
+        modbus.write_register(register, value, unit_id)
+        info(f"Wrote value {value} to register {register} on unit {unit_id}")
+        return jsonify({
+            "status": "success",
+            "message": f"Successfully wrote {value} to register {register}",
+            "register": register,
+            "unitId": unit_id,
+            "value": value
+        })
+    except Exception as e:
+        error(f"Error writing to Modbus register: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": f"Error writing to register: {str(e)}"
+        }), 500
 
 '''
     FRONT END CONTROL ENDPOINTS (CUTTER FACE)
