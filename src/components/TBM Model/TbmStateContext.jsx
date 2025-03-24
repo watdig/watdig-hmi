@@ -531,9 +531,10 @@ export const TbmStateProvider = ({ children }) => {
     }
 
     const intervalId = setInterval(() => {
-      const baseValue = 120; // Base pressure when system is running
-      const fluctuation = (Math.random() * 10) - 5; // Random fluctuation ±5 bar
-      const activityBonus = jackingFrameStatus !== "stopped" ? 20 : 0; // Pressure increase during activity
+      // Convert base pressure from bar to PSI (120 bar ≈ 1740 PSI)
+      const baseValue = 1740; // Base pressure when system is running in PSI
+      const fluctuation = (Math.random() * 145) - 72.5; // Random fluctuation ±5 bar converted to PSI
+      const activityBonus = jackingFrameStatus !== "stopped" ? 290 : 0; // Pressure increase during activity (20 bar ≈ 290 PSI)
       
       setOilPressure(baseValue + fluctuation + activityBonus);
     }, 1000);
