@@ -562,6 +562,44 @@ def health_check():
             "status": "unhealthy",
             "message": f"Modbus connection error: {str(e)}"
         }), 503
+    
+'''
+Power Management Board Endpoints
+'''
+
+@app.route('/api/pm/set-120V', methods=['POST'])
+def set_120V():
+    try:
+        data = request.get_json()
+        value = data.get('value', 0)  # Get the value from request, default to 0
+        modbus.write_register(6, value, 7)
+        return jsonify({
+            "status": "success",
+            "message": f"120V set to {value} successfully"
+        })
+    except Exception as e:
+        error(f"Error setting 120V: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+    
+@app.route('/api/pm/set-480V', methods=['POST'])
+def set_480():
+    try:
+        data = request.get_json()
+        value = data.get('value', 0)
+        modbus.write_register(6, data, 7)
+        return jsonify({
+            "status": "success",
+            "message": "480V set successfully"
+        })
+    except Exception as e:
+        error(f"Error setting 480V: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 if __name__ == '__main__':
     run_server()

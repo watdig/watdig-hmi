@@ -1,103 +1,151 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { 
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogActions, 
+  Button, 
+  Slider, 
+  Typography, 
+  Box 
+} from '@mui/material';
 import { useTbmState } from './TbmStateContext';
+import { startMotor, setFrequency } from '../../components/API Control/VfdControl'
 
-const FrequencyDialog = ({ dialogType, confirmFrequencyChange }) => {
-  const { tempFrequency, setTempFrequency } = useTbmState();
+const FrequencyDialog = () => {
+  const { 
+    showFrequencyDialog, 
+    setShowFrequencyDialog, 
+    dialogType, 
+    tempFrequency, 
+    setTempFrequency, 
+    confirmFrequencyChange 
+  } = useTbmState();
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [apiError, setApiError] = useState(null);
 
-  const styles = {
-    confirmationDialog: {
-      position: 'fixed',
-      top: '0',
-      left: '0',
-      width: '100%',
-      height: '100%',
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: '1000'
-    },
-    dialogContent: {
-      backgroundColor: '#2a2a2a',
-      padding: '20px',
-      borderRadius: '8px',
-      maxWidth: '400px',
-      textAlign: 'center'
-    },
-    frequencyValue: {
-      fontSize: '24px',
-      fontWeight: 'bold',
-      margin: '10px 0'
-    },
-    frequencyUnit: {
-      fontSize: '16px',
-      color: '#aaa'
-    },
-    frequencySlider: {
-      width: '100%',
-      margin: '20px 0',
-      accentColor: '#4CAF50'
-    },
-    dialogButtons: {
-      display: 'flex',
-      justifyContent: 'center',
-      gap: '20px',
-      marginTop: '20px'
-    },
-    dialogButton: {
-      padding: '10px 30px',
-      borderRadius: '5px',
-      border: 'none',
-      cursor: 'pointer',
-      fontWeight: 'bold'
-    },
-    dialogButtonYes: {
-      backgroundColor: '#4CAF50',
-      color: 'white'
-    },
-    dialogButtonNo: {
-      backgroundColor: '#f44336',
-      color: 'white'
+  const handleClose = () => {
+    setShowFrequencyDialog(false);
+    setApiError(null);
+  };
+
+  const handleConfirm = async () => {
+    setIsSubmitting(true);
+    setApiError(null);
+    
+    try {
+      // First start the motor
+      const startResult = await startMotor(dialogType);
+      if (!startResult.success) {
+        throw new Error(`Failed to start ${dialogType}: ${startResult.error}`);
+      }
+      
+      // Then set the frequency
+      const freqResult = await setFrequency(dialogType, tempFrequency);
+      if (!freqResult.success) {
+        throw new Error(`Failed to set frequency for ${dialogType}: ${freqResult.error}`);
+      }
+      
+      // Update the UI state
+      confirmFrequencyChange();
+      handleClose();
+    } catch (error) {
+      console.error('Error in frequency dialog:', error);
+      setApiError(error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getTitle = () => {
+    switch (dialogType) {
+      case 'cutterface':
+        return 'Set Cutter Face Frequency';
+      case 'waterpump':
+        return 'Set Water Pump Frequency';
+      default:
+        return 'Set Frequency';
     }
   };
 
   return (
-    <div style={styles.confirmationDialog}>
-      <div style={styles.dialogContent}>
-        <h3>Set {dialogType === "cutterface" ? "Cutter Face" : "Water Pump"} Frequency</h3>
-        <p>Select the operating frequency:</p>
-        
-        <div style={styles.frequencyValue}>
-          {tempFrequency} <span style={styles.frequencyUnit}>Hz</span>
-        </div>
-        
-        <input 
-          type="range" 
-          min="0" 
-          max="60" 
-          value={tempFrequency} 
-          onChange={(e) => setTempFrequency(Number(e.target.value))} 
-          style={styles.frequencySlider}
-        />
-        
-        <p>The {dialogType === "cutterface" ? "cutter" : "pump"} will start at this frequency.</p>
-        
-        <div style={styles.dialogButtons}>
-          <button 
-            onClick={() => confirmFrequencyChange(true)} 
-            style={{...styles.dialogButton, ...styles.dialogButtonYes}}
-          >
-            Start
-          </button>
-          <button 
-            onClick={() => confirmFrequencyChange(false)} 
-            style={{...styles.dialogButton, ...styles.dialogButtonNo}}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
+    <Dialog 
+      open={showFrequencyDialog} 
+      onClose={handleClose}
+      PaperProps={{
+        style: {
+          backgroundColor: '#333',
+          color: 'white',
+          minWidth: '400px'
+        }
+      }}
+    >
+      <DialogTitle>{getTitle()}</DialogTitle>
+      <DialogContent>
+        <Box sx={{ width: '100%', padding: '20px 10px' }}>
+          <Typography id="frequency-slider" gutterBottom>
+            Frequency: {tempFrequency} Hz
+          </Typography>
+          <Slider
+            value={tempFrequency}
+            onChange={(e, newValue) => setTempFrequency(newValue)}
+            aria-labelledby="frequency-slider"
+            valueLabelDisplay="auto"
+            step={1}
+            marks
+            min={0}
+            max={60}
+            sx={{
+              color: '#4CAF50',
+              '& .MuiSlider-thumb': {
+                height: 24,
+                width: 24,
+                backgroundColor: '#fff',
+                border: '2px solid currentColor',
+                '&:focus, &:hover, &.Mui-active, &.Mui-focusVisible': {
+                  boxShadow: '0 0 0 8px rgba(76, 175, 80, 0.16)',
+                },
+              },
+              '& .MuiSlider-valueLabel': {
+                backgroundColor: '#4CAF50',
+              },
+            }}
+          />
+          
+          {apiError && (
+            <Typography color="error" sx={{ mt: 2 }}>
+              Error: {apiError}
+            </Typography>
+          )}
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button 
+          onClick={handleClose}
+          sx={{ color: '#888' }}
+        >
+          Cancel
+        </Button>
+        <Button 
+          onClick={handleConfirm}
+          variant="contained"
+          disabled={isSubmitting}
+          sx={{
+            backgroundColor: '#4CAF50',
+            '&:hover': {
+              backgroundColor: '#45a049'
+            },
+            '&.Mui-disabled': {
+              backgroundColor: '#2e7d32',
+              color: 'rgba(255, 255, 255, 0.5)'
+            }
+          }}
+        >
+          {isSubmitting ? 'Starting...' : 'Start'}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 

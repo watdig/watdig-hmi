@@ -1,17 +1,79 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { useTbmState } from "./TbmStateContext";
 import LoadSensorTable from "./LoadSensorTable";
 import OilTempMonitor from "./OilTempMonitor";
 import JackingFrame from "./JackingFrame";
 import HpuControls from './HpuControls';
+import { activateEstop, resetEstop } from "../API Control/EstopControl";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 
 const TbmVisualization = () => {
   const {
     powerOn, cutterRotation, steeringAngle, loadSensors,
     oilTemperature, oilTempStatus, jackingFramePosition,
     jackingFrameStatus, extendJackingFrame, stopJackingFrame,
-    retractJackingFrame, eStopTripped, triggerEStop, rpm
+    retractJackingFrame, eStopTripped, triggerEStop, resetEStop, rpm
   } = useTbmState();
+
+  // State for error dialog
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // Handler for E-Stop button click
+  const handleEstopClick = async () => {
+    try {
+      // Call the API to activate E-Stop
+      const result = await activateEstop();
+      
+      if (result && result.success) {
+        console.log("E-Stop activated successfully via API");
+      } else {
+        console.error("Failed to activate E-Stop via API:", result?.error);
+      }
+      
+      // Update the UI state regardless of API success
+      // This ensures the UI reflects the E-Stop state even if the API call fails
+      triggerEStop();
+      
+    } catch (error) {
+      console.error("Error activating E-Stop:", error);
+      // Still update the UI state to show E-Stop is activated
+      triggerEStop();
+    }
+  };
+
+  // Handler for E-Stop reset
+  const handleEstopReset = async () => {
+    if (!eStopTripped) return;
+    
+    try {
+      // Call the API to reset E-Stop
+      const result = await resetEstop();
+      
+      if (result && result.success) {
+        console.log("E-Stop reset successfully via API");
+        // Only update the UI state if the API call was successful
+        resetEStop();
+      } else {
+        // Show error dialog if the API call failed
+        console.error("Failed to reset E-Stop via API:", result?.error);
+        setErrorMessage("Failed to reset E-Stop. The system may still be in an emergency state.");
+        setShowErrorDialog(true);
+        // Do NOT update the UI state - keep E-Stop active
+      }
+    } catch (error) {
+      // Show error dialog for any exceptions
+      console.error("Error resetting E-Stop:", error);
+      setErrorMessage(`Error resetting E-Stop: ${error.message || "Unknown error"}`);
+      setShowErrorDialog(true);
+      // Do NOT update the UI state - keep E-Stop active
+    }
+  };
+
+  // Close the error dialog
+  const handleCloseErrorDialog = () => {
+    setShowErrorDialog(false);
+  };
 
   const styles = {
     tbmVisualization: {
@@ -122,6 +184,34 @@ const TbmVisualization = () => {
     estopButtonPressed: {
       transform: 'scale(0.95)',
       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+    },
+    resetButton: {
+      position: 'absolute',
+      bottom: '20px',
+      right: '110px',
+      padding: '8px 12px',
+      backgroundColor: '#4CAF50',
+      color: 'white',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      display: eStopTripped ? 'block' : 'none'
+    },
+    errorDialog: {
+      '& .MuiPaper-root': {
+        backgroundColor: '#333',
+        color: 'white',
+      }
+    },
+    errorDialogTitle: {
+      backgroundColor: '#f44336',
+      color: 'white',
+    },
+    errorDialogContent: {
+      padding: '20px',
+    },
+    errorDialogActions: {
+      padding: '10px 20px 20px',
     },
     loadSensor: {
       width: '15px',
@@ -247,11 +337,48 @@ const TbmVisualization = () => {
           ...styles.estopButton,
           ...(eStopTripped ? styles.estopButtonPressed : {})
         }}
-        onClick={triggerEStop}
+        onClick={handleEstopClick}
         disabled={eStopTripped}
       >
         E-STOP
       </button>
+
+      {/* Reset Button - Only shown when E-Stop is tripped */}
+      <button
+        style={styles.resetButton}
+        onClick={handleEstopReset}
+      >
+        Reset
+      </button>
+
+      {/* Error Dialog */}
+      <Dialog
+        open={showErrorDialog}
+        onClose={handleCloseErrorDialog}
+        className={styles.errorDialog}
+        PaperProps={{
+          style: {
+            backgroundColor: '#333',
+            color: 'white',
+          }
+        }}
+      >
+        <DialogTitle style={styles.errorDialogTitle}>
+          E-Stop Reset Failed
+        </DialogTitle>
+        <DialogContent style={styles.errorDialogContent}>
+          {errorMessage}
+        </DialogContent>
+        <DialogActions style={styles.errorDialogActions}>
+          <Button 
+            onClick={handleCloseErrorDialog} 
+            variant="contained"
+            style={{ backgroundColor: '#4CAF50' }}
+          >
+            Acknowledge
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <HpuControls />
     </div>
