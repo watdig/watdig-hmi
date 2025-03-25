@@ -1,10 +1,11 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useTbmState } from "./TbmStateContext";
 import LoadSensorTable from "./LoadSensorTable";
 import OilTempMonitor from "./OilTempMonitor";
 import JackingFrame from "./JackingFrame";
 import HpuControls from './HpuControls';
 import { activateEstop, resetEstop } from "../API Control/EstopControl";
+import { getEncoderSpeed } from "../API Control/BelowGroundBoardControl";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 
 const TbmVisualization = () => {
@@ -12,12 +13,37 @@ const TbmVisualization = () => {
     powerOn, cutterRotation, steeringAngle, loadSensors,
     oilTemperature, oilTempStatus, jackingFramePosition,
     jackingFrameStatus, extendJackingFrame, stopJackingFrame,
-    retractJackingFrame, eStopTripped, triggerEStop, resetEStop, rpm
+    retractJackingFrame, eStopTripped, triggerEStop, resetEStop
   } = useTbmState();
 
   // State for error dialog
   const [showErrorDialog, setShowErrorDialog] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  
+  // State for encoder speed
+  const [rpm, setRpm] = useState(null);
+
+  // Poll the encoder speed API
+  useEffect(() => {
+    const fetchEncoderSpeed = async () => {
+      try {
+        const encoderSpeed = await getEncoderSpeed();
+        setRpm(encoderSpeed);
+      } catch (error) {
+        console.error('Error fetching encoder speed:', error);
+        setRpm(null);
+      }
+    };
+
+    // Initial fetch
+    fetchEncoderSpeed();
+
+    // Set up polling interval (every 2 seconds)
+    const intervalId = setInterval(fetchEncoderSpeed, 2000);
+
+    // Clean up interval on component unmount
+    return () => clearInterval(intervalId);
+  }, []);
 
   // Handler for E-Stop button click
   const handleEstopClick = async () => {
@@ -148,18 +174,17 @@ const TbmVisualization = () => {
       height: '30px',
       backgroundColor: '#333',
       position: 'absolute',
-      right: '-30px',
-      bottom: '20px'
+      right: '-50px',
+      top: '40px'
     },
     hydraulicPiston: {
-      width: '60px',
-      height: '15px',
+      width: '80px',
+      height: '20px',
       backgroundColor: '#666',
       position: 'absolute',
-      left: '100px',
-      bottom: '-20px',
-      transform: `rotate(${steeringAngle}deg)`,
-      transformOrigin: 'left center'
+      left: '50px',
+      bottom: '-10px',
+      borderRadius: '3px'
     },
     estopButton: {
       position: 'absolute',
@@ -167,35 +192,31 @@ const TbmVisualization = () => {
       right: '20px',
       width: '80px',
       height: '80px',
-      borderRadius: '50%',
       backgroundColor: '#f44336',
-      border: '5px solid #b71c1c',
       color: 'white',
-      fontWeight: 'bold',
+      border: 'none',
+      borderRadius: '50%',
       fontSize: '16px',
+      fontWeight: 'bold',
       cursor: 'pointer',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
       boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
-      transition: 'transform 0.1s, box-shadow 0.1s',
-      userSelect: 'none'
+      transition: 'all 0.2s ease'
     },
     estopButtonPressed: {
-      transform: 'scale(0.95)',
-      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+      backgroundColor: '#b71c1c',
+      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+      transform: 'translateY(2px)'
     },
     resetButton: {
       position: 'absolute',
       bottom: '20px',
-      right: '110px',
-      padding: '8px 12px',
+      right: '120px',
+      padding: '10px 15px',
       backgroundColor: '#4CAF50',
       color: 'white',
       border: 'none',
       borderRadius: '4px',
-      cursor: 'pointer',
-      display: eStopTripped ? 'block' : 'none'
+      cursor: 'pointer'
     },
     errorDialog: {
       '& .MuiPaper-root': {
@@ -269,14 +290,14 @@ const TbmVisualization = () => {
   return (
     <div style={styles.tbmVisualization}>
       {/* Load Sensor Table Component */}
-      <LoadSensorTable loadSensors={loadSensors} />
+      <LoadSensorTable />
 
       <div style={styles.tbmBody}>
         {/* Motor Encoder Box */}
         <div style={styles.motorEncoder}>
           <div style={styles.encoderLabel}>Motor Encoder</div>
           <div style={styles.encoderValue}>
-            {rpm.toFixed(1)} RPM
+            {rpm !== null ? `${rpm.toFixed(1)} RPM` : 'N/A'}
           </div>
         </div>
 

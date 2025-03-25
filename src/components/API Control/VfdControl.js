@@ -3,7 +3,9 @@ import axios from 'axios';
 // Function to start the cutter face motor
 export const startCutterFaceMotor = async () => {
   try {
-    const response = await axios.get('/api/startup-sequence');
+    const response = await axios.get(
+      "http://127.0.0.1:8080/api/startup-sequence"
+    );
     console.log('Cutter face motor started:', response.data);
     return { success: true, data: response.data };
   } catch (error) {
@@ -15,7 +17,7 @@ export const startCutterFaceMotor = async () => {
 // Function to stop the cutter face motor
 export const stopCutterFaceMotor = async () => {
   try {
-    const response = await axios.get('/api/stop-motor');
+    const response = await axios.get("http://127.0.0.1:8080/api/stop-motor");
     console.log('Cutter face motor stopped:', response.data);
     return { success: true, data: response.data };
   } catch (error) {
@@ -27,7 +29,10 @@ export const stopCutterFaceMotor = async () => {
 // Function to set the cutter face frequency
 export const setCutterFaceFrequency = async (frequency) => {
   try {
-    const response = await axios.post('/api/set-frequency', { frequency: frequency * 333.33 });
+    const response = await axios.post(
+      "http://127.0.0.1:8080/api/set-frequency",
+      { frequency: frequency * 333.33 }
+    );
     console.log('Cutter face frequency set:', response.data);
     return { success: true, data: response.data };
   } catch (error) {
@@ -39,7 +44,9 @@ export const setCutterFaceFrequency = async (frequency) => {
 // Function to start the water pump motor
 export const startWaterPumpMotor = async () => {
   try {
-    const response = await axios.get('/api/wp/startup-sequence');
+    const response = await axios.get(
+      "http://127.0.0.1:8080/api/wp/startup-sequence"
+    );
     console.log('Water pump motor started:', response.data);
     return { success: true, data: response.data };
   } catch (error) {

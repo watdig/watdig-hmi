@@ -776,6 +776,11 @@ def get_actuator_C():
     actuatorC = modbus.read_register(17, 5)
     return actuatorC
 
+@app.route('/api/bg/encoder-speed', methods=['GET'])
+def get_encoder_speed():
+    encoderSpeed = modbus.read_register(62, 5)
+    return encoderSpeed
+
 
 if __name__ == '__main__':
     run_server()

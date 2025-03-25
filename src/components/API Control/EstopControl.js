@@ -8,7 +8,10 @@ import axios from 'axios';
 export const set120V = async (state) => {
     try {
         const value = state ? 1 : 0;
-        const response = await axios.post('/api/pm/set-120V', { value });
+        const response = await axios.post(
+          "http://127.0.0.1:8080/api/pm/set-120V",
+          { value }
+        );
         console.log(`120V power set to ${state ? 'ON' : 'OFF'}`);
         return { success: true, data: response.data };
     } catch (error) {
@@ -25,7 +28,10 @@ export const set120V = async (state) => {
 export const set480V = async (state) => {
     try {
         const value = state ? 1 : 0;
-        const response = await axios.post('/api/pm/set-480V', { value });
+        const response = await axios.post(
+          "http://127.0.0.1:8080/api/pm/set-480V",
+          { value }
+        );
         console.log(`480V power set to ${state ? 'ON' : 'OFF'}`);
         return { success: true, data: response.data };
     } catch (error) {

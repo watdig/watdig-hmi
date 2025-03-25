@@ -1,6 +1,68 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { getThrustTop, getThrustLeft, getThrustRight } from '../API Control/BelowGroundBoardControl';
 
-const LoadSensorTable = ({ loadSensors }) => {
+const LoadSensorTable = () => {
+  const [loadSensors, setLoadSensors] = useState([
+    { id: 1, position: 'top', value: 0, status: 'normal' },
+    { id: 2, position: 'left', value: 0, status: 'normal' },
+    { id: 3, position: 'right', value: 0, status: 'normal' }
+  ]);
+
+  // Function to determine sensor status based on value
+  const getSensorStatus = (value) => {
+    if (value === null) return 'normal';
+    if (value >= 80) return 'high';
+    if (value >= 50) return 'medium';
+    return 'normal';
+  };
+
+  // Poll the API endpoints
+  useEffect(() => {
+    const fetchSensorData = async () => {
+      try {
+        // Fetch all sensor data in parallel
+        const [topValue, leftValue, rightValue] = await Promise.all([
+          getThrustTop(),
+          getThrustLeft(),
+          getThrustRight()
+        ]);
+        
+        // Update sensor data with fetched values and determine status
+        setLoadSensors([
+          { 
+            id: 1, 
+            position: 'top', 
+            value: topValue !== null ? topValue : 'N/A', 
+            status: getSensorStatus(topValue) 
+          },
+          { 
+            id: 2, 
+            position: 'left', 
+            value: leftValue !== null ? leftValue : 'N/A', 
+            status: getSensorStatus(leftValue) 
+          },
+          { 
+            id: 3, 
+            position: 'right', 
+            value: rightValue !== null ? rightValue : 'N/A', 
+            status: getSensorStatus(rightValue) 
+          }
+        ]);
+      } catch (error) {
+        console.error('Error fetching load sensor data:', error);
+      }
+    };
+
+    // Initial fetch
+    fetchSensorData();
+
+    // Set up polling interval (every 2 seconds)
+    const intervalId = setInterval(fetchSensorData, 2000);
+
+    // Clean up interval on component unmount
+    return () => clearInterval(intervalId);
+  }, []);
+
   const styles = {
     loadSensorTable: {
       position: 'absolute',
@@ -77,7 +139,7 @@ const LoadSensorTable = ({ loadSensors }) => {
             ...styles.loadSensorTableValue,
             color: getStatusColor(sensor.status)
           }}>
-            {sensor.value}%
+            {sensor.value} N
           </div>
         </div>
       ))}
