@@ -30,7 +30,7 @@ const ModbusControl = () => {
 
   const checkModbusStatus = async () => {
     try {
-      const response = await axios.get('/health');
+      const response = await axios.get('http://127.0.0.1:8080/health');
       if (response.data.status === 'healthy') {
         console.log('Modbus connection is active');
       }
@@ -71,7 +71,7 @@ const ModbusControl = () => {
         throw new Error(`Invalid register format: ${err.message}`);
       }
 
-      const response = await axios.get('/api/modbus/read', {
+      const response = await axios.get('http://127.0.0.1:8080/api/modbus/read', {
         params: {
           unitId: parseInt(unitId),
           register: parsedRegister,
@@ -127,7 +127,7 @@ const ModbusControl = () => {
         throw new Error(`Invalid value format: ${err.message}`);
       }
 
-      const response = await axios.post('/api/modbus/write', {
+      const response = await axios.post('http://127.0.0.1:8080/api/modbus/write', {
         unitId: parseInt(unitId),
         register: parsedRegister,
         value: parsedValue

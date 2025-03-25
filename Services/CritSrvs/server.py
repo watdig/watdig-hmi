@@ -97,10 +97,7 @@ def read_modbus():
                 "value": value
             })
         else:
-            values = []
-            for i in range(range_val):
-                value = modbus.read_register(register + i, unit_id)
-                values.append({"register": register + i, "value": value})
+            value = modbus.read_register(register, unit_id, range_val)
             
             info(f"Read {range_val} registers starting at {register} from unit {unit_id}")
             return jsonify({
@@ -108,7 +105,6 @@ def read_modbus():
                 "unitId": unit_id,
                 "startRegister": register,
                 "range": range_val,
-                "values": values
             })
     except Exception as e:
         error(f"Error reading Modbus register: {str(e)}")
@@ -266,6 +262,8 @@ def reverse_frequency():
 '''
     FRONT END CONTROL ENDPOINTS (WATER PUMP)
 '''
+
+'''
 @app.route('/api/wp/startup-sequence', methods=['GET'])
 def startup_sequence():
     modbus.write_register(0, 0b110, 2)
@@ -368,7 +366,7 @@ def reverse_frequency():
             "status": "error",
             "message": str(e)
         }), 500
-
+'''
 '''
     HELPER FUNCTIONS
 '''
@@ -538,7 +536,7 @@ def get_operating_data():
 
 '''
 OPERATING DATA REGISTERS (WATER PUMP)
-'''
+
 
 @app.route('/api/wp/data/speed-dir', methods=['GET'])
 @handle_modbus_errors
@@ -609,10 +607,10 @@ def get_mot_therm_stress():
     """Get motor thermal stress level"""
     mot_therm_stress = modbus.read_register(152, 1)
     return format_response(mot_therm_stress, "Motor Thermal Stress", "%")
-
+'''
 '''
 FAULT HISTORY REGISTERS (WATER PUMP)
-'''
+
 
 @app.route('/api/wp/fault/latest-fault', methods=['GET'])
 @handle_modbus_errors
@@ -673,7 +671,7 @@ def get_operating_data():
         error(f"Error fetching operating data for waterpump: {str(e)}")
         return jsonify({'error': str(e)}), 500
     
-
+'''
 '''
 HEALTH CHECK ENDPOINTS
 '''
@@ -681,7 +679,7 @@ HEALTH CHECK ENDPOINTS
 def health_check():
     """API health check endpoint"""
     try:
-        modbus.read_register(101, 1)
+        modbus.read_register(1, 3)
         return jsonify({
             "status": "healthy",
             "message": "API is running and Modbus connection is active"
@@ -729,6 +727,55 @@ def set_480():
             "status": "error",
             "message": str(e)
         }), 500
+    
+'''
+Below Ground Board Endpoints
+'''
+@app.route('/api/bg/get-thrustTop', methods=['GET'])
+def get_thrustTop():
+    thrustTop = modbus.read_register(9, 5)
+    return thrustTop
+
+@app.route('/api/bg/get-thrustLeft', methods=['GET'])
+def get_thrustLeft():
+    thrustLeft = modbus.read_register(10, 5)
+    return thrustLeft
+
+@app.route('/api/bg/get-thrustRight', methods=['GET'])
+def get_thrustRight():
+    thrustRight = modbus.read_register(11, 5)
+    return thrustRight
+
+@app.route('/api/bg/motor-temp', methods=['GET'])
+def get_bg_motor_temp():
+    motorTemp = modbus.read_register(12, 5)
+    return motorTemp
+
+@app.route('/api/bg/earth-preassure', methods=['GET'])
+def get_earth_preassure():
+    earthPreassure = modbus.read_register(13, 5)
+    return earthPreassure
+
+@app.route('/api/bg/flame', methods=['GET'])
+def get_flame():
+    flame = modbus.read_register(14, 5)
+    return flame
+
+@app.route('/api/bg/actuator-A', methods=['GET'])
+def get_actuator_A():
+    actuatorA = modbus.read_register(15, 5)
+    return actuatorA
+
+@app.route('/api/bg/actuator-B', methods=['GET'])
+def get_actuator_B():
+    actuatorB = modbus.read_register(16, 5)
+    return actuatorB
+
+@app.route('/api/bg/actuator-C', methods=['GET'])
+def get_actuator_C():
+    actuatorC = modbus.read_register(17, 5)
+    return actuatorC
+
 
 if __name__ == '__main__':
     run_server()

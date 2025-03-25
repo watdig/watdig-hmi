@@ -6,7 +6,6 @@ import time
 import sys
 import glob
 import serial
-from Services.database_service import Database
 import sqlite3
 from flask_cors import CORS
 
@@ -30,6 +29,10 @@ class ModbusConnection:
         # Method to establish a connection to the Modbus device
         retry_count = 0  # Counter for connection attempts
         max_retries = 3  # Maximum number of retries for connection
+        
+        # Enable socket logging
+        import pymodbus.transaction
+        pymodbus.transaction.SOCKET_LOGGER = True
         
         while retry_count < max_retries:
             try:
@@ -71,28 +74,37 @@ class ModbusConnection:
         logger.error("Failed to connect after maximum retries")  # Log failure after max retries
         return False  # Return False if connection fails after retries
 
-    def read_register(self, register):
+    def read_register(self, register, unitId, count=1):
         # Method to read a value from a specified Modbus register
         try:
             # Ensure the Modbus client is connected before reading
             if not self.client or not self.client.is_socket_open():
                 if not self.connect():  # Attempt to reconnect if not connected
                     raise Exception("Failed to reconnect to Modbus device")
-
+        
+            logging.debug(f"Sending Modbus request: register={register}, count={count}, unit={unitId}")
+            
             # Read the specified holding register
-            result = self.client.read_holding_registers(register, 1)
-
+            start_time = time.time()
+            result = self.client.read_holding_registers(register, count, unitId)
+            response_time = time.time() - start_time
+            
+            logging.debug(f"Modbus response time: {response_time:.3f}s")
+            logging.debug(f"Raw response: {result}")
+            
             # Check for errors in the result
             if result.isError():
-                raise Exception(f"Modbus error reading register {register}")
-
+                error_code = getattr(result, 'exception_code', 'unknown')
+                logging.error(f"Modbus error code: {error_code}")
+                raise Exception(f"Modbus error reading register {register}, error code: {error_code}")
+            
+            logging.info(f"Successfully read register {register}, value: {result.registers}")
             # Return the first value from the result (register value)
-            return result.registers[0]
+            return result.registers[0] if count == 1 else result.registers
 
         except Exception as e:
-            # Log any errors that occur during the read operation
-            logger.error(f"Error reading register {register}: {str(e)}")
-            raise  # Re-raise the exception for further handling
+            logging.error(f"Error reading register {register}: {str(e)}", exc_info=True)
+            raise
 
     def write_register(self, register, value):
         # Method to write a value to a specified Modbus register
@@ -118,4 +130,4 @@ class ModbusConnection:
             raise  # Re-raise the exception
 
 modbus = ModbusConnection()
-print(bin(modbus.read_register(0)))
+print((modbus.read_register(15, 5)))
