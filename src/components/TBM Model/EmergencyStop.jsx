@@ -2,9 +2,15 @@ import React, { useState } from 'react';
 import { useTbmState } from './TbmStateContext';
 import { resetEstop } from '../API Control/EstopControl';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
+import axios from 'axios';
 
 const EmergencyStop = () => {
-  const { eStopTripped, eStopReason, resetEStop } = useTbmState();
+  const { 
+    eStopTripped, 
+    eStopReason, 
+    resetEStop,
+    rs485Connected 
+  } = useTbmState();
   
   // State for error dialog
   const [showErrorDialog, setShowErrorDialog] = useState(false);
@@ -26,7 +32,9 @@ const EmergencyStop = () => {
       padding: '8px 16px',
       borderRadius: '4px',
       cursor: 'pointer',
-      marginTop: '10px'
+      marginTop: '10px',
+      opacity: (!rs485Connected || !eStopTripped) ? 0.5 : 1,
+      pointerEvents: (!rs485Connected || !eStopTripped) ? 'none' : 'auto'
     },
     errorDialog: {
       '& .MuiPaper-root': {
@@ -50,27 +58,22 @@ const EmergencyStop = () => {
   const handleEstopReset = async () => {
     if (!eStopTripped) return;
     
+    
     try {
-      // Call the API to reset E-Stop
       const result = await resetEstop();
       
       if (result && result.success) {
         console.log("E-Stop reset successfully via API");
-        // Only update the UI state if the API call was successful
         resetEStop();
       } else {
-        // Show error dialog if the API call failed
         console.error("Failed to reset E-Stop via API:", result?.error);
         setErrorMessage("Failed to reset E-Stop. The system may still be in an emergency state.");
         setShowErrorDialog(true);
-        // Do NOT update the UI state - keep E-Stop active
       }
     } catch (error) {
-      // Show error dialog for any exceptions
       console.error("Error resetting E-Stop:", error);
       setErrorMessage(`Error resetting E-Stop: ${error.message || "Unknown error"}`);
       setShowErrorDialog(true);
-      // Do NOT update the UI state - keep E-Stop active
     }
   };
 
@@ -82,7 +85,11 @@ const EmergencyStop = () => {
   return (
     <div style={styles.estopIndicator}>
       <h3>Emergency Stop Status</h3>
-      <p>{eStopTripped ? "ACTIVATED: " + eStopReason : "Not Activated"}</p>
+      <p>
+        {eStopTripped 
+          ? `ACTIVATED: ${eStopReason || (!rs485Connected ? "RS485 CONNECTION LOST" : "Unknown reason")}` 
+          : "Not Activated"}
+      </p>
       {eStopTripped && (
         <button 
           style={styles.resetButton}

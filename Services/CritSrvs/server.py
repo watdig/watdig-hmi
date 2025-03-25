@@ -14,23 +14,72 @@ from Services.modbus_service import ModbusConnection
 from Services.logger_service import info, error
 from Models.ModbusDB.operating_data_table import OperatingData
 
-def create_app():
-    app = Flask(__name__)
-    CORS(app)
-    return app
+MAX_RETRIES = 3  # Maximum number of connection attempts
+RETRY_DELAY = 2  # Seconds between retries
+
+# Create a single Flask app instance
+app = Flask(__name__)
+CORS(app)
+modbus = None
+rs485_connected = False
 
 def run_server():
-    app = create_app()
+    global modbus, rs485_connected
+    
+    # Try to establish Modbus connection
+    retry_count = 0
+    while retry_count < MAX_RETRIES:
+        try:
+            modbus = ModbusConnection()
+            rs485_connected = True
+            info("Successfully connected to RS485")
+            break
+        except Exception as e:
+            retry_count += 1
+            error(f"Failed to connect to RS485 (Attempt {retry_count}/{MAX_RETRIES}): {str(e)}")
+            if retry_count < MAX_RETRIES:
+                time.sleep(RETRY_DELAY)
+            else:
+                error("Failed to establish RS485 connection after maximum retries")
+                rs485_connected = False
+                break
+
     app.run(use_reloader=False, host='0.0.0.0', port=8080)
 
-# Start instance of Modbus Connection and Flask App
-modbus = ModbusConnection()
-app = create_app()
+@app.route('/rs485', methods=['GET'])
+def get_rs485_status():
+    """Get the current status of the RS485 connection"""
+    global rs485_connected
+    try:
+        # Just check if we have an active Modbus client
+        if modbus and modbus.client and modbus.client.is_socket_open():
+            return jsonify({
+                "connected": True,
+                "message": "RS485 connection is active"
+            })
+        else:
+            rs485_connected = False
+            return jsonify({
+                "connected": False,
+                "message": "RS485 connection is not active"
+            })
+    except Exception as e:
+        rs485_connected = False
+        error(f"RS485 connection check failed: {str(e)}")
+        return jsonify({
+            "connected": False,
+            "message": f"RS485 connection error: {str(e)}"
+        })
 
 # Decorator for handling Modbus errors
 def handle_modbus_errors(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        if not rs485_connected:
+            return jsonify({
+                "status": "error",
+                "message": "RS485 connection is not available"
+            }), 503
         try:
             return f(*args, **kwargs)
         except Exception as e:
@@ -732,54 +781,79 @@ def set_480():
 Below Ground Board Endpoints
 '''
 @app.route('/api/bg/get-thrustTop', methods=['GET'])
+@handle_modbus_errors
 def get_thrustTop():
-    thrustTop = modbus.read_register(9, 5)
-    return thrustTop
+    value = modbus.read_register(9, 5)
+    return value
 
 @app.route('/api/bg/get-thrustLeft', methods=['GET'])
+@handle_modbus_errors
 def get_thrustLeft():
-    thrustLeft = modbus.read_register(10, 5)
-    return thrustLeft
+    value = modbus.read_register(10, 5)
+    return jsonify(value)
 
 @app.route('/api/bg/get-thrustRight', methods=['GET'])
+@handle_modbus_errors
 def get_thrustRight():
-    thrustRight = modbus.read_register(11, 5)
-    return thrustRight
+    value = modbus.read_register(11, 5)
+    return jsonify(value)
 
 @app.route('/api/bg/motor-temp', methods=['GET'])
-def get_bg_motor_temp():
-    motorTemp = modbus.read_register(12, 5)
-    return motorTemp
+@handle_modbus_errors
+def get_motor_temp():
+    value = modbus.read_register(12, 5)
+    return jsonify(value)
 
 @app.route('/api/bg/earth-preassure', methods=['GET'])
-def get_earth_preassure():
-    earthPreassure = modbus.read_register(13, 5)
-    return earthPreassure
+@handle_modbus_errors
+def get_earth_pressure():
+    value = modbus.read_register(13, 5)
+    return jsonify(value)
 
 @app.route('/api/bg/flame', methods=['GET'])
+@handle_modbus_errors
 def get_flame():
-    flame = modbus.read_register(14, 5)
-    return flame
+    value = modbus.read_register(14, 5)
+    return jsonify(value)
 
 @app.route('/api/bg/actuator-A', methods=['GET'])
-def get_actuator_A():
-    actuatorA = modbus.read_register(15, 5)
-    return actuatorA
+@handle_modbus_errors
+def get_actuator_a():
+    value = modbus.read_register(15, 5)
+    return jsonify(value)
 
 @app.route('/api/bg/actuator-B', methods=['GET'])
-def get_actuator_B():
-    actuatorB = modbus.read_register(16, 5)
-    return actuatorB
+@handle_modbus_errors
+def get_actuator_b():
+    value = modbus.read_register(16, 5)
+    return jsonify(value)
 
 @app.route('/api/bg/actuator-C', methods=['GET'])
-def get_actuator_C():
-    actuatorC = modbus.read_register(17, 5)
-    return actuatorC
+@handle_modbus_errors
+def get_actuator_c():
+    value = modbus.read_register(17, 5)
+    return jsonify(value)
 
 @app.route('/api/bg/encoder-speed', methods=['GET'])
+@handle_modbus_errors
 def get_encoder_speed():
-    encoderSpeed = modbus.read_register(62, 5)
-    return encoderSpeed
+    value = modbus.read_register(62, 5)
+    return value
+
+'''
+Above Ground Board Endpoints
+'''
+@app.route('/api/ag/oil-preassure', methods=['GET'])
+@handle_modbus_errors
+def get_oil_pressure():
+    value = modbus.read_register(12, 6)
+    return jsonify(value)
+
+@app.route('/api/ag/oil-temp', methods=['GET'])
+@handle_modbus_errors
+def get_oil_temp():
+    value = modbus.read_register(10, 6)
+    return jsonify(value)
 
 
 if __name__ == '__main__':

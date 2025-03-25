@@ -106,7 +106,7 @@ class ModbusConnection:
             logging.error(f"Error reading register {register}: {str(e)}", exc_info=True)
             raise
 
-    def write_register(self, register, value):
+    def write_register(self, register, value, deviceId):
         # Method to write a value to a specified Modbus register
         try:
             # Ensure the Modbus client is connected before writing
@@ -115,7 +115,7 @@ class ModbusConnection:
                     raise Exception("Failed to reconnect to Modbus device")
 
             # Write the specified value to the holding register
-            result = self.client.write_register(register, value)
+            result = self.client.write_register(register, value, deviceId)
 
             # Check for errors in the result
             if result.isError():
@@ -130,4 +130,5 @@ class ModbusConnection:
             raise  # Re-raise the exception
 
 modbus = ModbusConnection()
-print((modbus.read_register(15, 5)))
+value = modbus.read_register(65, 5)
+print(value)

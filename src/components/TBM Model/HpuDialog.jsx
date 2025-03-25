@@ -1,19 +1,52 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTbmState } from './TbmStateContext';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
+import { getOilPressure, getOilTemperature } from '../API Control/AboveGroundBoardControl';
 
 const HpuDialog = ({ open, onClose }) => {
   const {
     hpuEnabled,
-    oilPressure,
-    oilTemperature,
     jackingFramePosition,
     jackingFrameStatus
   } = useTbmState();
+
+  // State for API data
+  const [oilPressure, setOilPressure] = useState(null);
+  const [oilTemperature, setOilTemperature] = useState(null);
+
+  // Poll the API endpoints
+  useEffect(() => {
+    if (!open) return; // Only poll when dialog is open
+
+    const fetchHpuData = async () => {
+      try {
+        // Fetch all sensor data in parallel
+        const [pressureValue, temperatureValue] = await Promise.all([
+          getOilPressure(),
+          getOilTemperature()
+        ]);
+        
+        // Update state with fetched values
+        setOilPressure(pressureValue);
+        setOilTemperature(temperatureValue);
+      } catch (error) {
+        console.error('Error fetching HPU data:', error);
+      }
+    };
+
+    // Initial fetch
+    fetchHpuData();
+
+    // Set up polling interval (every 2 seconds)
+    const intervalId = setInterval(fetchHpuData, 2000);
+
+    // Clean up interval on component unmount or when dialog closes
+    return () => clearInterval(intervalId);
+  }, [open]);
 
   const styles = {
     dialogTitle: {
@@ -100,6 +133,8 @@ const HpuDialog = ({ open, onClose }) => {
   };
 
   const getValueColor = (value, type) => {
+    if (value === null) return 'white';
+    
     switch (type) {
       case 'temperature':
         return value > 95 ? '#f44336' : 
@@ -152,7 +187,7 @@ const HpuDialog = ({ open, onClose }) => {
               ...styles.value,
               color: getValueColor(oilTemperature, 'temperature')
             }}>
-              {oilTemperature.toFixed(1)}°C
+              {oilTemperature !== null ? `${oilTemperature.toFixed(1)}°C` : 'N/A'}
             </span>
           </div>
 
@@ -162,7 +197,7 @@ const HpuDialog = ({ open, onClose }) => {
               ...styles.value,
               color: getValueColor(oilPressure, 'pressure')
             }}>
-              {oilPressure.toFixed(1)} bar
+              {oilPressure !== null ? `${oilPressure.toFixed(1)} bar` : 'N/A'}
             </span>
           </div>
 

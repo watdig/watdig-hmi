@@ -82,6 +82,15 @@ export const TbmStateProvider = ({ children }) => {
   const [hpuEnabled, setHpuEnabled] = useState(false);
   const [oilPressure, setOilPressure] = useState(0);
 
+  // Add to your existing state:
+  const [tbmStateMessage, setTbmStateMessage] = useState({
+    type: 'info',  // 'info', 'warning', 'error'
+    message: ''
+  });
+
+  // Add to your existing state:
+  const [rs485Connected, setRs485Connected] = useState(true);
+
   // Animate cutter head rotation based on RPM
   useEffect(() => {
     if (!powerOn || rpm === 0) return;
@@ -630,6 +639,10 @@ export const TbmStateProvider = ({ children }) => {
     },
     hpuEnabled, setHpuEnabled,
     oilPressure, setOilPressure,
+    tbmStateMessage,
+    setTbmStateMessage,
+    rs485Connected,
+    setRs485Connected
   };
 
   return (

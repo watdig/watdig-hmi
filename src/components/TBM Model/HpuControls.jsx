@@ -1,14 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTbmState } from './TbmStateContext';
 import Switch from '@mui/material/Switch';
+import { getOilPressure } from '../API Control/AboveGroundBoardControl';
 
 const HpuControls = () => {
   const { 
     hpuEnabled, setHpuEnabled,
-    oilPressure,
     powerOn, eStopTripped,
     setOilPressure
   } = useTbmState();
+
+  // State for API data
+  const [oilPressureValue, setOilPressureValue] = useState(null);
+
+  // Poll the oil pressure API
+  useEffect(() => {
+    const fetchOilPressure = async () => {
+      try {
+        const pressureValue = await getOilPressure();
+        setOilPressureValue(pressureValue);
+        
+        // Also update the global state for other components
+        if (pressureValue !== null) {
+          setOilPressure(pressureValue);
+        }
+      } catch (error) {
+        console.error('Error fetching oil pressure:', error);
+      }
+    };
+
+    // Initial fetch
+    fetchOilPressure();
+
+    // Set up polling interval (every 2 seconds)
+    const intervalId = setInterval(fetchOilPressure, 2000);
+
+    // Clean up interval on component unmount
+    return () => clearInterval(intervalId);
+  }, [setOilPressure]);
 
   const styles = {
     hpuControlsContainer: {
@@ -54,6 +83,13 @@ const HpuControls = () => {
     }
   };
 
+  // Get color based on pressure value
+  const getPressureColor = (value) => {
+    if (value === null) return '#aaa';
+    return value > 180 ? '#f44336' : 
+           value > 150 ? '#ff9800' : '#4CAF50';
+  };
+
   return (
     <div style={styles.hpuControlsContainer}>
       <div style={styles.pressureBox}>
@@ -61,10 +97,9 @@ const HpuControls = () => {
         <div>
           <span style={{
             ...styles.value,
-            color: oilPressure > 180 ? '#f44336' : 
-                   oilPressure > 150 ? '#ff9800' : '#4CAF50'
+            color: getPressureColor(oilPressureValue)
           }}>
-            {oilPressure.toFixed(1)}
+            {oilPressureValue !== null ? oilPressureValue.toFixed(1) : 'N/A'}
           </span>
           <span style={styles.unit}>bar</span>
         </div>
@@ -77,11 +112,6 @@ const HpuControls = () => {
           onChange={() => {
             if (!powerOn || eStopTripped) return;
             setHpuEnabled(!hpuEnabled);
-            if (!hpuEnabled) {
-              setOilPressure(120);
-            } else {
-              setOilPressure(0);
-            }
           }}
           disabled={!powerOn || eStopTripped}
           color="success"
