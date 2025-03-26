@@ -13,7 +13,7 @@ import threading
 from Services.logger_service import info, error, warning, debug, critical
 
 class ModbusConnection:
-    def __init__(self, port='/dev/tty.SLAB_USBtoUART', baudrate=9600, timeout=5):
+    def __init__(self, port='/dev/tty.usbserial-0001', baudrate=9600, timeout=5):
         self.port = port 
         self.baudrate = baudrate
         self.timeout = timeout
@@ -130,3 +130,10 @@ class ModbusConnection:
         except Exception as e:
             error(f"Error writing to register {register}: {str(e)}")
             raise
+
+    def __del__(self):
+        if hasattr(self, 'client') and self.client:
+            try:
+                self.client.close()
+            except:
+                pass

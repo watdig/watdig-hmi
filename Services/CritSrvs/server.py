@@ -781,61 +781,51 @@ def set_480():
 Below Ground Board Endpoints
 '''
 @app.route('/api/bg/get-thrustTop', methods=['GET'])
-@handle_modbus_errors
 def get_thrustTop():
     value = modbus.read_register(9, 5)
     return value
 
 @app.route('/api/bg/get-thrustLeft', methods=['GET'])
-@handle_modbus_errors
 def get_thrustLeft():
     value = modbus.read_register(10, 5)
     return jsonify(value)
 
 @app.route('/api/bg/get-thrustRight', methods=['GET'])
-@handle_modbus_errors
 def get_thrustRight():
     value = modbus.read_register(11, 5)
     return jsonify(value)
 
 @app.route('/api/bg/motor-temp', methods=['GET'])
-@handle_modbus_errors
 def get_motor_temp():
     value = modbus.read_register(12, 5)
     return jsonify(value)
 
 @app.route('/api/bg/earth-preassure', methods=['GET'])
-@handle_modbus_errors
 def get_earth_pressure():
     value = modbus.read_register(13, 5)
     return jsonify(value)
 
 @app.route('/api/bg/flame', methods=['GET'])
-@handle_modbus_errors
 def get_flame():
     value = modbus.read_register(14, 5)
     return jsonify(value)
 
 @app.route('/api/bg/actuator-A', methods=['GET'])
-@handle_modbus_errors
 def get_actuator_a():
     value = modbus.read_register(15, 5)
     return jsonify(value)
 
 @app.route('/api/bg/actuator-B', methods=['GET'])
-@handle_modbus_errors
 def get_actuator_b():
     value = modbus.read_register(16, 5)
     return jsonify(value)
 
 @app.route('/api/bg/actuator-C', methods=['GET'])
-@handle_modbus_errors
 def get_actuator_c():
     value = modbus.read_register(17, 5)
     return jsonify(value)
 
 @app.route('/api/bg/encoder-speed', methods=['GET'])
-@handle_modbus_errors
 def get_encoder_speed():
     value = modbus.read_register(62, 5)
     return value
@@ -844,13 +834,11 @@ def get_encoder_speed():
 Above Ground Board Endpoints
 '''
 @app.route('/api/ag/oil-preassure', methods=['GET'])
-@handle_modbus_errors
 def get_oil_pressure():
     value = modbus.read_register(12, 6)
     return jsonify(value)
 
 @app.route('/api/ag/oil-temp', methods=['GET'])
-@handle_modbus_errors
 def get_oil_temp():
     value = modbus.read_register(10, 6)
     return jsonify(value)

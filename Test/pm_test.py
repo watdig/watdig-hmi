@@ -215,7 +215,7 @@ if __name__ == '__main__':
     #startup_sequence()
     #test_startup_sequence()
     #print(modbus.read_register(8))
-    test_power_meter(0, 3)
+    test_power_meter(8, 3)
     #test_power_meter(2, 4)
     #test_power_meter(4, 4)
     '''print(test_power_meter(2))

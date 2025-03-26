@@ -114,6 +114,7 @@ export const getActuatorA = async () => {
  * Get actuator B position
  * @returns {Promise<number>} - Actuator B position
  */
+
 export const getActuatorB = async () => {
     try {
         const response = await axios.get(
