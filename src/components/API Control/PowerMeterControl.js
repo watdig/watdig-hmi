@@ -5,7 +5,7 @@
 */
 import axios from 'axios';
 
-const API_BASE_URL = 'http://127.0.0.1:8080/api';
+const API_BASE_URL = "http://127.0.0.1:5000/api";
 
 // Fetch phase 1 line-to-neutral voltage (480V)
 export const get480V1N = async () => {

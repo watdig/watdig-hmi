@@ -4,7 +4,7 @@ import axios from 'axios';
 export const startCutterFaceMotor = async () => {
   try {
     const response = await axios.get(
-      "http://127.0.0.1:8080/api/startup-sequence"
+      "http://127.0.0.1:5000/api/startup-sequence"
     );
     console.log('Cutter face motor started:', response.data);
     return { success: true, data: response.data };
@@ -17,7 +17,7 @@ export const startCutterFaceMotor = async () => {
 // Function to stop the cutter face motor
 export const stopCutterFaceMotor = async () => {
   try {
-    const response = await axios.get("http://127.0.0.1:8080/api/stop-motor");
+    const response = await axios.get("http://127.0.0.1:5000/api/stop-motor");
     console.log('Cutter face motor stopped:', response.data);
     return { success: true, data: response.data };
   } catch (error) {
@@ -30,7 +30,7 @@ export const stopCutterFaceMotor = async () => {
 export const setCutterFaceFrequency = async (frequency) => {
   try {
     const response = await axios.post(
-      "http://127.0.0.1:8080/api/set-frequency",
+      "http://127.0.0.1:5000/api/set-frequency",
       { frequency: frequency * 333.33 }
     );
     console.log('Cutter face frequency set:', response.data);
@@ -45,7 +45,7 @@ export const setCutterFaceFrequency = async (frequency) => {
 export const startWaterPumpMotor = async () => {
   try {
     const response = await axios.get(
-      "http://127.0.0.1:8080/api/wp/startup-sequence"
+      "http://127.0.0.1:5000/api/wp/startup-sequence"
     );
     console.log('Water pump motor started:', response.data);
     return { success: true, data: response.data };
@@ -58,7 +58,7 @@ export const startWaterPumpMotor = async () => {
 // Function to stop the water pump motor
 export const stopWaterPumpMotor = async () => {
   try {
-    const response = await axios.get("http://127.0.0.1:8080/api/wp/stop-motor");
+    const response = await axios.get("http://127.0.0.1:5000/api/wp/stop-motor");
     console.log('Water pump motor stopped:', response.data);
     return { success: true, data: response.data };
   } catch (error) {
@@ -71,7 +71,7 @@ export const stopWaterPumpMotor = async () => {
 export const setWaterPumpFrequency = async (frequency) => {
   try {
     const response = await axios.post(
-      "http://127.0.0.1:8080/api/wp/set-frequency",
+      "http://127.0.0.1:5000/api/wp/set-frequency",
       { frequency: frequency * 333.33 }
     );
     console.log('Water pump frequency set:', response.data);

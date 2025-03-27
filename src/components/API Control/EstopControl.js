@@ -4,7 +4,7 @@ export const set120V = async (state) => {
     try {
         const value = state ? 1 : 0;
         const response = await axios.post(
-          "http://127.0.0.1:8080/api/pm/set-120V",
+          "http://127.0.0.1:5000/api/pm/set-120V",
           { value }
         );
         console.log(`120V power set to ${state ? 'ON' : 'OFF'}`);
@@ -19,7 +19,7 @@ export const set480V = async (state) => {
     try {
         const value = state ? 1 : 0;
         const response = await axios.post(
-          "http://127.0.0.1:8080/api/pm/set-480V",
+          "http://127.0.0.1:5000/api/pm/set-480V",
           { value }
         );
         console.log(`480V power set to ${state ? 'ON' : 'OFF'}`);

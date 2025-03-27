@@ -3,7 +3,7 @@ import axios from 'axios';
 export const getOilPressure = async () => {
     try {
         const response = await axios.get(
-          "http://127.0.0.1:8080/api/ag/oil-preassure"
+          "http://127.0.0.1:5000/api/ag/oil-preassure"
         );
         return response.data;
     } catch (error) {
@@ -15,7 +15,7 @@ export const getOilPressure = async () => {
 export const getOilTemperature = async () => {
     try {
         const response = await axios.get(
-          "http://127.0.0.1:8080/api/ag/oil-temp"
+          "http://127.0.0.1:5000/api/ag/oil-temp"
         );
         return response.data;
     } catch (error) {

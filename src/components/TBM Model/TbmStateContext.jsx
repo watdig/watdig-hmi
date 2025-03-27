@@ -434,7 +434,7 @@ export const TbmStateProvider = ({ children }) => {
   // Add Modbus functions
   const readModbusRegister = async (unitId, register, range = 1) => {
     try {
-      const response = await axios.get('/api/modbus/read', {
+      const response = await axios.get('http://127.0.0.1:5000/read', {
         params: {
           unitId: parseInt(unitId),
           register: parseInt(register),
@@ -442,25 +442,16 @@ export const TbmStateProvider = ({ children }) => {
         }
       });
       
-      // Update relevant state based on register values
-      if (response.data) {
-        updateStateFromModbus(response.data);
-      }
-      
-      setModbusStatus({ connected: true, lastError: null });
       return response.data;
-    } catch (err) {
-      setModbusStatus({
-        connected: false,
-        lastError: err.response?.data?.message || 'Failed to read from Modbus'
-      });
-      throw err;
+    } catch (error) {
+      console.error('Error reading Modbus register:', error);
+      throw error;
     }
   };
 
   const writeModbusRegister = async (unitId, register, value) => {
     try {
-      const response = await axios.post('/api/modbus/write', {
+      const response = await axios.post('http://127.0.0.1:5000/write', {
         unitId: parseInt(unitId),
         register: parseInt(register),
         value: parseInt(value)

@@ -86,7 +86,8 @@ const ModbusControl = () => {
         throw new Error(`Invalid register format: ${err.message}`);
       }
 
-      const response = await axios.get('http://127.0.0.1:5000/api/modbus/read', {
+      // Change the URL to match the actual endpoint on the server
+      const response = await axios.get('http://127.0.0.1:5000/read', {
         params: {
           unitId: parseInt(unitId),
           register: parsedRegister,
@@ -142,7 +143,7 @@ const ModbusControl = () => {
         throw new Error(`Invalid value format: ${err.message}`);
       }
 
-      const response = await axios.post('http://127.0.0.1:5000/api/modbus/write', {
+      const response = await axios.post('http://127.0.0.1:5000/write', {
         unitId: parseInt(unitId),
         register: parsedRegister,
         value: parsedValue
@@ -367,7 +368,7 @@ const ModbusControl = () => {
             ...styles.button,
             ...(loading ? styles.buttonDisabled : {})
           }}
-          disabled={loading || !modbusStatus.connected}
+          disabled={loading || !isConnected}
         >
           {loading ? 'Processing...' : mode === 'read' ? 'Read' : 'Write'}
         </button>

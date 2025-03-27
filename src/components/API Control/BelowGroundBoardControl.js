@@ -4,7 +4,7 @@ import axios from 'axios';
 export const getThrustTop = async () => {
     try {
         const response = await axios.get(
-          "http://127.0.0.1:8080/api/bg/get-thrustTop"
+          "http://127.0.0.1:5000/api/bg/get-thrustTop"
         );
         return response.data;
     } catch (error) {
@@ -16,7 +16,7 @@ export const getThrustTop = async () => {
 export const getThrustLeft = async () => {
     try {
         const response = await axios.get(
-          "http://127.0.0.1:8080/api/bg/get-thrustLeft"
+          "http://127.0.0.1:5000/api/bg/get-thrustLeft"
         );
         return response.data;
     } catch (error) {
@@ -28,7 +28,7 @@ export const getThrustLeft = async () => {
 export const getThrustRight = async () => {
     try {
         const response = await axios.get(
-          "http://127.0.0.1:8080/api/bg/get-thrustRight"
+          "http://127.0.0.1:5000/api/bg/get-thrustRight"
         );
         return response.data;
     } catch (error) {
@@ -40,7 +40,7 @@ export const getThrustRight = async () => {
 export const getMotorTemp = async () => {
     try {
         const response = await axios.get(
-          "http://127.0.0.1:8080/api/bg/motor-temp"
+          "http://127.0.0.1:5000/api/bg/motor-temp"
         );
         return response.data;
     } catch (error) {
@@ -52,7 +52,7 @@ export const getMotorTemp = async () => {
 export const getEarthPressure = async () => {
     try {
         const response = await axios.get(
-          "http://127.0.0.1:8080/api/bg/earth-preassure"
+          "http://127.0.0.1:5000/api/bg/earth-preassure"
         );
         return response.data;
     } catch (error) {
@@ -63,7 +63,7 @@ export const getEarthPressure = async () => {
 
 export const getFlame = async () => {
     try {
-        const response = await axios.get("http://127.0.0.1:8080/api/bg/flame");
+        const response = await axios.get("http://127.0.0.1:5000/api/bg/flame");
         return response.data;
     } catch (error) {
         console.error('Error getting flame sensor:', error);
@@ -74,7 +74,7 @@ export const getFlame = async () => {
 export const getActuatorA = async () => {
     try {
         const response = await axios.get(
-          "http://127.0.0.1:8080/api/bg/actuator-A"
+          "http://127.0.0.1:5000/api/bg/actuator-A"
         );
         return response.data;
     } catch (error) {
@@ -86,7 +86,7 @@ export const getActuatorA = async () => {
 export const getActuatorB = async () => {
     try {
         const response = await axios.get(
-          "http://127.0.0.1:8080/api/bg/actuator-B"
+          "http://127.0.0.1:5000/api/bg/actuator-B"
         );
         return response.data;
     } catch (error) {
@@ -98,7 +98,7 @@ export const getActuatorB = async () => {
 export const getActuatorC = async () => {
     try {
         const response = await axios.get(
-          "http://127.0.0.1:8080/api/bg/actuator-C"
+          "http://127.0.0.1:5000/api/bg/actuator-C"
         );
         return response.data;
     } catch (error) {
@@ -110,7 +110,7 @@ export const getActuatorC = async () => {
 export const getEncoderSpeed = async () => {
     try {
         const response = await axios.get(
-          "http://127.0.0.1:8080/api/bg/encoder-speed"
+          "http://127.0.0.1:5000/api/bg/encoder-speed"
         );
         return response.data;
     } catch (error) {
