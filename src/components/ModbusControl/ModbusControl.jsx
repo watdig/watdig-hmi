@@ -22,44 +22,36 @@ const ModbusControl = () => {
     message: '',
     severity: 'success'
   });
-  const { modbusStatus, setModbusStatus } = useTbmState();
+  const { modbusStatus } = useTbmState();
 
   // Check Modbus connection status on component mount
   useEffect(() => {
     checkModbusStatus();
     
     // Add polling to regularly check the connection status
-    const statusInterval = setInterval(checkModbusStatus, 2000);
+    const statusInterval = setInterval(checkModbusStatus, 2000); // Check every 10 seconds
     
-    // Clean up interval when component unmounts
     return () => clearInterval(statusInterval);
   }, []);
 
   const checkModbusStatus = async () => {
     try {
+      // Use the correct port (8080) and add a timestamp to prevent caching
       const response = await axios.get('http://127.0.0.1:5000/rs485');
+      console.log('Modbus status response:', response.data.connected);
       
       if (response.data.connected === true) {
+        console.log('Modbus connection is active');
         setError(null);
         setIsConnected(true);
-        if (setModbusStatus) {
-          setModbusStatus({ connected: true });
-        }
+
       } else {
         console.error('Modbus not connected according to server response');
         setError('Modbus connection is not available. Check server status.');
-        setIsConnected(false);
-        if (setModbusStatus) {
-          setModbusStatus({ connected: false });
-        }
       }
     } catch (err) {
       console.error('Modbus connection check failed:', err);
       setError('Modbus connection is not available. Check server status.');
-      setIsConnected(false);
-      if (setModbusStatus) {
-        setModbusStatus({ connected: false });
-      }
     }
   };
 
@@ -375,7 +367,7 @@ const ModbusControl = () => {
             ...styles.button,
             ...(loading ? styles.buttonDisabled : {})
           }}
-          disabled={loading || !isConnected}
+          disabled={loading || !modbusStatus.connected}
         >
           {loading ? 'Processing...' : mode === 'read' ? 'Read' : 'Write'}
         </button>
