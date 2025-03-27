@@ -1,9 +1,6 @@
 import axios from 'axios';
 
-/**
- * Get thrust top sensor value
- * @returns {Promise<number>} - Thrust top value
- */
+
 export const getThrustTop = async () => {
     try {
         const response = await axios.get(
@@ -16,10 +13,6 @@ export const getThrustTop = async () => {
     }
 };
 
-/**
- * Get thrust left sensor value
- * @returns {Promise<number>} - Thrust left value
- */
 export const getThrustLeft = async () => {
     try {
         const response = await axios.get(
@@ -32,10 +25,6 @@ export const getThrustLeft = async () => {
     }
 };
 
-/**
- * Get thrust right sensor value
- * @returns {Promise<number>} - Thrust right value
- */
 export const getThrustRight = async () => {
     try {
         const response = await axios.get(
@@ -48,10 +37,6 @@ export const getThrustRight = async () => {
     }
 };
 
-/**
- * Get motor temperature value
- * @returns {Promise<number>} - Motor temperature value
- */
 export const getMotorTemp = async () => {
     try {
         const response = await axios.get(
@@ -64,10 +49,6 @@ export const getMotorTemp = async () => {
     }
 };
 
-/**
- * Get earth pressure value
- * @returns {Promise<number>} - Earth pressure value
- */
 export const getEarthPressure = async () => {
     try {
         const response = await axios.get(
@@ -80,10 +61,6 @@ export const getEarthPressure = async () => {
     }
 };
 
-/**
- * Get flame sensor value
- * @returns {Promise<number>} - Flame sensor value
- */
 export const getFlame = async () => {
     try {
         const response = await axios.get("http://127.0.0.1:8080/api/bg/flame");
@@ -94,10 +71,6 @@ export const getFlame = async () => {
     }
 };
 
-/**
- * Get actuator A position
- * @returns {Promise<number>} - Actuator A position
- */
 export const getActuatorA = async () => {
     try {
         const response = await axios.get(
@@ -109,11 +82,6 @@ export const getActuatorA = async () => {
         return null;
     }
 };
-
-/**
- * Get actuator B position
- * @returns {Promise<number>} - Actuator B position
- */
 
 export const getActuatorB = async () => {
     try {
@@ -127,10 +95,6 @@ export const getActuatorB = async () => {
     }
 };
 
-/**
- * Get actuator C position
- * @returns {Promise<number>} - Actuator C position
- */
 export const getActuatorC = async () => {
     try {
         const response = await axios.get(
@@ -143,10 +107,6 @@ export const getActuatorC = async () => {
     }
 };
 
-/**
- * Get encoder speed value
- * @returns {Promise<number>} - Encoder speed value in RPM
- */
 export const getEncoderSpeed = async () => {
     try {
         const response = await axios.get(

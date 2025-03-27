@@ -88,7 +88,7 @@ const TbmStateBanner = () => {
   useEffect(() => {
     const checkRs485Status = async () => {
       try {
-        const response = await axios.get('http://127.0.0.1:8080/rs485');
+        const response = await axios.get('http://127.0.0.1:5000/rs485');
         const isConnected = response.data.connected;
         setRs485Connected(isConnected);
         

@@ -10,6 +10,7 @@ import FrequencyDialog from "./FrequencyDialog";
 import { useTbmState } from "./TbmStateContext";
 import ModbusControl from '../ModbusControl/ModbusControl';
 import TbmStateBanner from "./TbmStateBanner";
+import PowerMeterPanel from "./PowerMeterPanel";
 
 const TbmModel = () => {
   const {
@@ -41,6 +42,10 @@ const TbmModel = () => {
       display: 'grid',
       gridTemplateColumns: '1fr 1fr',
       gap: '20px'
+    },
+    powerMeterSection: {
+      marginTop: '20px', // Add spacing between sections
+      width: '100%'      // Ensure full width
     }
   };
 
@@ -57,6 +62,10 @@ const TbmModel = () => {
           <NetworkStatus />
           <ModbusControl />
         </div>
+      </div>
+
+      <div style={styles.powerMeterSection}>
+        <PowerMeterPanel />
       </div>
 
       <EmergencyStop 

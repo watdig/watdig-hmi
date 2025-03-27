@@ -1,10 +1,5 @@
 import axios from 'axios';
 
-/**
- * Set 120V power state
- * @param {boolean} state - true to turn on (value 1), false to turn off (value 0)
- * @returns {Promise<Object>} - Response with success status
- */
 export const set120V = async (state) => {
     try {
         const value = state ? 1 : 0;
@@ -20,11 +15,6 @@ export const set120V = async (state) => {
     }
 };
 
-/**
- * Set 480V power state
- * @param {boolean} state - true to turn on (value 1), false to turn off (value 0)
- * @returns {Promise<Object>} - Response with success status
- */
 export const set480V = async (state) => {
     try {
         const value = state ? 1 : 0;
@@ -40,10 +30,6 @@ export const set480V = async (state) => {
     }
 };
 
-/**
- * Activate emergency stop
- * @returns {Promise<Object>} - Response with success status
- */
 export const activateEstop = async () => {
     try {
         // Turn off both 120V and 480V power
@@ -58,10 +44,6 @@ export const activateEstop = async () => {
     }
 };
 
-/**
- * Reset emergency stop
- * @returns {Promise<Object>} - Response with success status
- */
 export const resetEstop = async () => {
     try {
         // Just reset the E-Stop state, don't automatically turn power back on

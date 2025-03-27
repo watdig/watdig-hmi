@@ -1,10 +1,18 @@
-from flask import Blueprint, jsonify, request
+import sys
+import os
+import struct  # Add this import for struct operations
+
+# Add the project root directory to Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from flask import Blueprint, Flask, jsonify, request
 from Services.modbus_service import ModbusConnection
 from Services.logger_service import info, error
 import traceback
 from Test.pid_controller import WaterPumpSimulation
 import time
 from threading import Thread
+from flask_cors import CORS
 
 modbus_bp = Blueprint('modbus', __name__)
 modbus_client = ModbusConnection()
@@ -35,7 +43,7 @@ def read_register():
             # Read multiple registers
             result = []
             for i in range(range_size):
-                value = modbus_client.read_register(register + i, unit_id)
+                value = modbus_client.read_register_holding(register + i, unit_id)
                 result.append({
                     'register': register + i,
                     'value': value
@@ -43,7 +51,7 @@ def read_register():
             return jsonify(result)
         else:
             # Read single register
-            value = modbus_client.read_register(register, unit_id)
+            value = modbus_client.read_register_holding(register, unit_id)
             return jsonify({
                 'register': register,
                 'value': value
@@ -160,4 +168,225 @@ def control_water_pump():
         return jsonify({
             'status': 'error',
             'message': str(e)
-        }), 500 
+        }), 500
+
+'''
+    RS485 Endpoint
+'''
+@modbus_bp.route('/rs485', methods=['GET'])
+def get_rs485_status():
+    """Get the current status of the RS485 connection"""
+    try:
+        # Try to read a register to verify connection
+        try:
+            # Use any simple read operation to test connection
+            modbus_client.read_register_holding(0, 1)
+            return jsonify({
+                "connected": True,
+                "message": "RS485 connection is active"
+            })
+        except Exception as e:
+            error(f"RS485 communication test failed: {str(e)}")
+            return jsonify({
+                "connected": False,
+                "message": f"RS485 communication test failed: {str(e)}"
+            })
+    except Exception as e:
+        error(f"RS485 connection check failed: {str(e)}")
+        return jsonify({
+            "connected": False,
+            "message": f"RS485 connection error: {str(e)}"
+        })
+
+'''
+Power Meter Endpoints
+'''
+@modbus_bp.route('/pm480/V1N', methods=['GET'])
+def get_480_V1N():
+    try:
+        x = (modbus_client.read_register_input(8, 3) & 0xFFFF)  
+        y = (modbus_client.read_register_input(9, 3) & 0xFFFF) << 16
+        z = x + y
+        float_value = struct.unpack('<f', struct.pack('<I', z))[0]
+        return jsonify(float_value)
+    except Exception as e:
+        error(f"Error reading 480V V1N: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'message': str(e)}), 500
+
+@modbus_bp.route('/pm480/V2N', methods=['GET'])
+def get_480_V2N():
+    try:
+        x = (modbus_client.read_register_input(10, 3) & 0xFFFF)  
+        y = (modbus_client.read_register_input(11, 3) & 0xFFFF) << 16
+        z = x + y
+        float_value = struct.unpack('<f', struct.pack('<I', z))[0]
+        return jsonify(float_value)
+    except Exception as e:
+        error(f"Error reading 480V V2N: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'message': str(e)}), 500
+
+@modbus_bp.route('/pm480/V3N', methods=['GET'])
+def get_480_V3N():
+    try:
+        x = (modbus_client.read_register_input(12, 3) & 0xFFFF)  
+        y = (modbus_client.read_register_input(13, 3) & 0xFFFF) << 16
+        z = x + y
+        float_value = struct.unpack('<f', struct.pack('<I', z))[0]
+        return jsonify(float_value)
+    except Exception as e:
+        error(f"Error reading 480V V3N: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'message': str(e)}), 500
+
+@modbus_bp.route('/pm480/I1', methods=['GET'])
+def get_480_I1():
+    try:
+        x = (modbus_client.read_register_input(16, 3) & 0xFFFF)  
+        y = (modbus_client.read_register_input(17, 3) & 0xFFFF) << 16
+        z = x + y
+        float_value = struct.unpack('<f', struct.pack('<I', z))[0]
+        return jsonify(float_value)
+    except Exception as e:
+        error(f"Error reading 480V I1: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'message': str(e)}), 500
+
+@modbus_bp.route('/pm480/I2', methods=['GET'])
+def get_480_I2():
+    try:
+        x = (modbus_client.read_register_input(18, 3) & 0xFFFF)  
+        y = (modbus_client.read_register_input(19, 3) & 0xFFFF) << 16
+        z = x + y
+        float_value = struct.unpack('<f', struct.pack('<I', z))[0]
+        return jsonify(float_value)
+    except Exception as e:
+        error(f"Error reading 480V I2: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'message': str(e)}), 500
+
+# 120V Power Meter endpoints
+@modbus_bp.route('/pm120/V1N', methods=['GET'])
+def get_120_V1N():
+    try:
+        x = (modbus_client.read_register_input(0, 4) & 0xFFFF)  
+        y = (modbus_client.read_register_input(1, 4) & 0xFFFF) << 16
+        z = x + y
+        float_value = struct.unpack('<f', struct.pack('<I', z))[0]
+        return jsonify(float_value)
+    except Exception as e:
+        error(f"Error reading 120V V1N: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'message': str(e)}), 500
+
+@modbus_bp.route('/pm120/V2N', methods=['GET'])
+def get_120_V2N():
+    try:
+        x = (modbus_client.read_register_input(2, 4) & 0xFFFF)  
+        y = (modbus_client.read_register_input(3, 4) & 0xFFFF) << 16
+        z = x + y
+        float_value = struct.unpack('<f', struct.pack('<I', z))[0]
+        return jsonify(float_value)
+    except Exception as e:
+        error(f"Error reading 120V V2N: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'message': str(e)}), 500
+
+@modbus_bp.route('/pm120/V3N', methods=['GET'])
+def get_120_V3N():
+    try:
+        x = (modbus_client.read_register_input(4, 4) & 0xFFFF)  
+        y = (modbus_client.read_register_input(5, 4) & 0xFFFF) << 16
+        z = x + y
+        float_value = struct.unpack('<f', struct.pack('<I', z))[0]
+        return jsonify(float_value)
+    except Exception as e:
+        error(f"Error reading 120V V3N: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'message': str(e)}), 500
+
+@modbus_bp.route('/pm120/I1', methods=['GET'])
+def get_120_I1():
+    try:
+        x = (modbus_client.read_register_input(16, 4) & 0xFFFF)  
+        y = (modbus_client.read_register_input(17, 4) & 0xFFFF) << 16
+        z = x + y
+        float_value = struct.unpack('<f', struct.pack('<I', z))[0]
+        return jsonify(float_value)
+    except Exception as e:
+        error(f"Error reading 120V I1: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'message': str(e)}), 500
+
+@modbus_bp.route('/pm120/I2', methods=['GET'])
+def get_120_I2():
+    try:
+        x = (modbus_client.read_register_input(18, 4) & 0xFFFF)  
+        y = (modbus_client.read_register_input(19, 4) & 0xFFFF) << 16
+        z = x + y
+        float_value = struct.unpack('<f', struct.pack('<I', z))[0]
+        return jsonify(float_value)
+    except Exception as e:
+        error(f"Error reading 120V I2: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'message': str(e)}), 500
+
+   
+'''
+CutterHead VFD Endpoints
+'''
+
+@modbus_bp.route('/api/startup-sequence', methods=['GET'])
+def startup_sequence():
+    modbus_client.write_register(0, 0b110, 1)
+    time.sleep(0.1)
+    modbus_client.write_register(0, 0b111, 1)
+    modbus_client.write_register(0, 0b1111, 1)
+    modbus_client.write_register(0, 0b101111, 1)
+    modbus_client.write_register(0, 0b1101111, 1)
+
+
+
+# Create a standalone app when this file is run directly
+def create_app():
+    app = Flask(__name__)
+    CORS(app)
+    
+    # Register the blueprint with no prefix when running standalone
+    app.register_blueprint(modbus_bp)
+    
+    # Add a root route for testing
+    @app.route('/')
+    def index():
+        return jsonify({
+            "status": "running",
+            "message": "Modbus API server is running",
+            "endpoints": [
+                "/read", 
+                "/write",
+                "/pm480/V1N",
+                "/pm480/V2N",
+                "/pm480/V3N",
+                "/pm480/I1",
+                "/pm480/I2",
+                "/pm120/V1N",
+                "/pm120/V2N",
+                "/pm120/V3N",
+                "/pm120/I1",
+                "/pm120/I2",
+                "/api/startup-sequence"
+            ]
+        })
+    
+    return app
+
+# Run the app when this file is executed directly
+if __name__ == '__main__':
+    app = create_app()
+    info("Starting Modbus API server on http://127.0.0.1:5000")
+    try:
+        # Run with threaded=True to handle multiple requests
+        app.run(host='127.0.0.1', port=5000, debug=False, threaded=True)
+    except KeyboardInterrupt:
+        info("Server stopped by user")
+    except Exception as e:
+        error(f"Server error: {str(e)}")
+    finally:
+        # Clean up resources
+        if hasattr(modbus_client, 'client') and modbus_client.client:
+            try:
+                modbus_client.client.close()
+                info("Modbus connection closed")
+            except Exception as e:
+                error(f"Error closing Modbus connection: {str(e)}") 

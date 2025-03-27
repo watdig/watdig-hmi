@@ -7,6 +7,7 @@ import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
 
 import TbmMonitor from "./TbmMonitor";
+import PowerMeterPanel from '../components/TBM Model/PowerMeterPanel';
 
 const NavBar = styled.nav`
   position: fixed;
@@ -432,6 +433,7 @@ const Homepage = () => {
       )}
 
       {activeTab === 'datalogging' && <DataLogging />}
+      <PowerMeterPanel />
     </div>
   );
 };

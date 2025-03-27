@@ -16,27 +16,50 @@ const ModbusControl = () => {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
     severity: 'success'
   });
-  const { modbusStatus } = useTbmState();
+  const { modbusStatus, setModbusStatus } = useTbmState();
 
   // Check Modbus connection status on component mount
   useEffect(() => {
     checkModbusStatus();
+    
+    // Add polling to regularly check the connection status
+    const statusInterval = setInterval(checkModbusStatus, 2000);
+    
+    // Clean up interval when component unmounts
+    return () => clearInterval(statusInterval);
   }, []);
 
   const checkModbusStatus = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8080/rs485');
-      if (response.data.connected === 'healthy') {
-        console.log('Modbus connection is active');
+      const response = await axios.get('http://127.0.0.1:5000/rs485');
+      
+      if (response.data.connected === true) {
+        setError(null);
+        setIsConnected(true);
+        if (setModbusStatus) {
+          setModbusStatus({ connected: true });
+        }
+      } else {
+        console.error('Modbus not connected according to server response');
+        setError('Modbus connection is not available. Check server status.');
+        setIsConnected(false);
+        if (setModbusStatus) {
+          setModbusStatus({ connected: false });
+        }
       }
     } catch (err) {
       console.error('Modbus connection check failed:', err);
       setError('Modbus connection is not available. Check server status.');
+      setIsConnected(false);
+      if (setModbusStatus) {
+        setModbusStatus({ connected: false });
+      }
     }
   };
 
@@ -71,7 +94,7 @@ const ModbusControl = () => {
         throw new Error(`Invalid register format: ${err.message}`);
       }
 
-      const response = await axios.get('http://127.0.0.1:8080/api/modbus/read', {
+      const response = await axios.get('http://127.0.0.1:5000/api/modbus/read', {
         params: {
           unitId: parseInt(unitId),
           register: parsedRegister,
@@ -127,7 +150,7 @@ const ModbusControl = () => {
         throw new Error(`Invalid value format: ${err.message}`);
       }
 
-      const response = await axios.post('http://127.0.0.1:8080/api/modbus/write', {
+      const response = await axios.post('http://127.0.0.1:5000/api/modbus/write', {
         unitId: parseInt(unitId),
         register: parsedRegister,
         value: parsedValue
@@ -264,10 +287,10 @@ const ModbusControl = () => {
       <div style={styles.statusIndicator}>
         <div style={{
           ...styles.statusDot,
-          backgroundColor: modbusStatus.connected ? '#4CAF50' : '#f44336'
+          backgroundColor: isConnected ? '#4CAF50' : '#f44336'
         }} />
         <span>
-          {modbusStatus.connected ? 'Connected' : 'Disconnected'}
+          {isConnected ? 'Connected' : 'Disconnected'}
         </span>
       </div>
       
@@ -352,7 +375,7 @@ const ModbusControl = () => {
             ...styles.button,
             ...(loading ? styles.buttonDisabled : {})
           }}
-          disabled={loading || !modbusStatus.connected}
+          disabled={loading || !isConnected}
         >
           {loading ? 'Processing...' : mode === 'read' ? 'Read' : 'Write'}
         </button>
