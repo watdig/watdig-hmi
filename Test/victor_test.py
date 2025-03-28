@@ -16,8 +16,8 @@ logging.getLogger('pymodbus').setLevel(logging.ERROR)
 # CRITICAL: Logs critical issues in the program
 
 # Connection parameters
-PORT = '/dev/tty.SLAB_USBtoUART'
-BAUDRATE = 9600
+PORT = '/dev/tty.usbserial-0001'
+BAUDRATE = 115200
 PARITY = 'N'
 UNIT_ID = 1
 STOPBITS = 1
@@ -73,8 +73,8 @@ def main():
     client = initialize()
     if client.connect() is True:
         # Read the Modbus ID and use it for future communication
-        response = read_register(client, 40000, 1, 3)
-        UNIT_ID = response.register[0]
+        response = read_register(client, 0, 1, 255)
+        UNIT_ID = response.registers[0]
         while True:
             print("Enter numbers separated by spaces, enter q to terminate program")
             user_input = input("Format: Read(0)/Write(1) | # Registers | Start Register | Data:")
@@ -86,12 +86,13 @@ def main():
             elif command[0] > 1:
                 print("Read/Write input invalid")
             else:
-                print("Input", command)
                 if command[0] == 0:
-                    response = read_register(client, command[2], data, UNIT_ID)
+                    response = read_register(client, command[2], command[1], UNIT_ID)
                 else:
-                    for i in range(len(command) - 3):
+                    data = []
+                    for i in range(3, command[1] + 3):
                         data.append(command[i])
+                        print(data)
                     response = write_register(client, command[2], data, UNIT_ID)
         client.close()
 

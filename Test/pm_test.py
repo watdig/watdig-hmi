@@ -18,7 +18,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class ModbusConnection:
-    def __init__(self, port='/dev/tty.SLAB_USBtoUART', baudrate=115200, timeout=5):
+    def __init__(self, port='/dev/tty.usbserial-0001', baudrate=115200, timeout=1):
         # Initialize the Modbus connection parameters
         self.port = port  # Serial port to connect to
         self.baudrate = baudrate  # Baud rate for the connection
@@ -230,10 +230,12 @@ if __name__ == '__main__':
     while True:
         modbus.write_register(1, 20000, 2)
         time.sleep(0.1)'''
-    modbus.read_register_holding(0, 7)
+    '''while True:
+        modbus.write_register(6, [0b11], 7)'''
     #read_power_meter(18, 4)
     #read_power_meter(0, 3)
-    #print(modbus.read_register_input(100, 2))
+    print((modbus.read_register_holding(1, 7)))
+    modbus.write_register(6, 3, 7)
     #test_power_meter(2, 4)
     #test_power_meter(4, 4)
     '''print(test_power_meter(2))
