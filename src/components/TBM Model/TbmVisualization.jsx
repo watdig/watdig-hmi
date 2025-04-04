@@ -1,50 +1,80 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState } from "react";
 import { useTbmState } from "./TbmStateContext";
-import LoadSensorTable from "./LoadSensorTable";
-import OilTempMonitor from "./OilTempMonitor";
 import JackingFrame from "./JackingFrame";
 import HpuControls from './HpuControls';
-import { activateEstop, resetEstop } from "../API Control/EstopControl";
-import { getEncoderSpeed } from "../API Control/BelowGroundBoardControl";
+import axios from 'axios';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 
 const TbmVisualization = () => {
   const {
-    powerOn, cutterRotation, steeringAngle, loadSensors,
-    oilTemperature, oilTempStatus, jackingFramePosition,
-    jackingFrameStatus, extendJackingFrame, stopJackingFrame,
-    retractJackingFrame, eStopTripped, triggerEStop, resetEStop
+    powerOn, cutterRotation, loadSensors,
+    jackingFramePosition, jackingFrameStatus, 
+    extendJackingFrame, stopJackingFrame,
+    retractJackingFrame, eStopTripped, 
+    triggerEStop, resetEStop
   } = useTbmState();
 
   // State for error dialog
   const [showErrorDialog, setShowErrorDialog] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   
-  // State for encoder speed
-  const [rpm, setRpm] = useState(null);
+  // Move EstopControl functions directly into the component
+  const activateEstop = async () => {
+    try {
+      // Turn off both 120V and 480V power
+      await set120V(false);
+      await set480V(false);
+      
+      console.log('E-Stop activated');
+      return { success: true };
+    } catch (error) {
+      console.error('Error activating E-Stop:', error);
+      return { success: false, error };
+    }
+  };
 
-  // Poll the encoder speed API
-  useEffect(() => {
-    const fetchEncoderSpeed = async () => {
-      try {
-        const encoderSpeed = await getEncoderSpeed();
-        setRpm(encoderSpeed);
-      } catch (error) {
-        console.error('Error fetching encoder speed:', error);
-        setRpm(null);
-      }
-    };
+  const resetEstop = async () => {
+    try {
+      // Just reset the E-Stop state, don't automatically turn power back on
+      // Power will need to be turned on manually after E-Stop reset
+      console.log('E-Stop reset');
+      return { success: true };
+    } catch (error) {
+      console.error('Error resetting E-Stop:', error);
+      return { success: false, error };
+    }
+  };
 
-    // Initial fetch
-    fetchEncoderSpeed();
+  const set120V = async (state) => {
+    try {
+      const value = state ? 1 : 0;
+      const response = await axios.post(
+        "http://127.0.0.1:5000/api/pm/set-120V",
+        { value }
+      );
+      console.log(`120V power set to ${state ? 'ON' : 'OFF'}`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error setting 120V:', error);
+      return { success: false, error };
+    }
+  };
 
-    // Set up polling interval (every 2 seconds)
-    const intervalId = setInterval(fetchEncoderSpeed, 2000);
-
-    // Clean up interval on component unmount
-    return () => clearInterval(intervalId);
-  }, []);
-
+  const set480V = async (state) => {
+    try {
+      const value = state ? 1 : 0;
+      const response = await axios.post(
+        "http://127.0.0.1:5000/api/pm/set-480V",
+        { value }
+      );
+      console.log(`480V power set to ${state ? 'ON' : 'OFF'}`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error setting 480V:', error);
+      return { success: false, error };
+    }
+  };
+  
   // Handler for E-Stop button click
   const handleEstopClick = async () => {
     try {
@@ -264,43 +294,12 @@ const TbmVisualization = () => {
     },
     loadSensorHigh: {
       backgroundColor: '#f44336'
-    },
-    motorEncoder: {
-      position: 'absolute',
-      left: '-75px',  // Align with cutterhead
-      top: '-80px',   // Position above cutterhead
-      width: '150px', // Same width as cutterhead
-      backgroundColor: '#333',
-      padding: '8px',
-      borderRadius: '5px',
-      textAlign: 'center'
-    },
-    encoderLabel: {
-      fontSize: '12px',
-      color: '#aaa',
-      marginBottom: '4px'
-    },
-    encoderValue: {
-      fontSize: '16px',
-      fontWeight: 'bold',
-      color: '#4CAF50'
     }
   };
 
   return (
     <div style={styles.tbmVisualization}>
-      {/* Load Sensor Table Component */}
-      <LoadSensorTable />
-
       <div style={styles.tbmBody}>
-        {/* Motor Encoder Box */}
-        <div style={styles.motorEncoder}>
-          <div style={styles.encoderLabel}>Motor Encoder</div>
-          <div style={styles.encoderValue}>
-            {rpm !== null ? `${rpm.toFixed(1)} RPM` : 'N/A'}
-          </div>
-        </div>
-
         {/* Cutter Head with Load Sensors */}
         <div style={styles.cutterHead}>
           <div style={styles.cutterPattern}></div>
@@ -333,12 +332,6 @@ const TbmVisualization = () => {
         
         {/* Hydraulic Piston */}
         <div style={styles.hydraulicPiston}></div>
-        
-        {/* Oil Temperature Monitor Component */}
-        <OilTempMonitor 
-          temperature={oilTemperature}
-          status={oilTempStatus}
-        />
         
         {/* Jacking Frame Component */}
         <JackingFrame 

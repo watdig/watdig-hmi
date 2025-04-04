@@ -5,7 +5,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
-import { getOilPressure, getOilTemperature } from '../API Control/AboveGroundBoardControl';
+import axios from 'axios';
 
 const HpuDialog = ({ open, onClose }) => {
   const {
@@ -17,6 +17,31 @@ const HpuDialog = ({ open, onClose }) => {
   // State for API data
   const [oilPressure, setOilPressure] = useState(null);
   const [oilTemperature, setOilTemperature] = useState(null);
+
+  // Move AboveGroundBoardControl functions here
+  const getOilPressure = async () => {
+    try {
+      const response = await axios.get(
+        "http://127.0.0.1:5000/api/ag/oil-preassure"
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error getting oil pressure:', error);
+      return null;
+    }
+  };
+
+  const getOilTemperature = async () => {
+    try {
+      const response = await axios.get(
+        "http://127.0.0.1:5000/api/ag/oil-temp"
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error getting oil temperature:', error);
+      return null;
+    }
+  };
 
   // Poll the API endpoints
   useEffect(() => {

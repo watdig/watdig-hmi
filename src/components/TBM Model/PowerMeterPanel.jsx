@@ -1,36 +1,158 @@
 import React, { useState, useEffect } from 'react';
 import { useTbmState } from './TbmStateContext';
-import { 
-  get480V1N, 
-  get480V2N, 
-  get480V3N,
-  get480I1,
-  get480I2,
-  get120V1N,
-  get120V2N,
-  get120V3N,
-  get120I1,
-  get120I2
-} from '../API Control/PowerMeterControl';
+import axios from 'axios';
 
 const PowerMeterPanel = () => {
   const { getColorForStatus } = useTbmState();
   const [powerData, setPowerData] = useState({
     pm480: {
-      v12: { value: 0, unit: 'V', status: 'normal' },
-      v23: { value: 0, unit: 'V', status: 'normal' },
-      v34: { value: 0, unit: 'V', status: 'normal' },
-      i1: { value: 0, unit: 'A', status: 'normal' },
-      i2: { value: 0, unit: 'A', status: 'normal' },
+      v1n: null,
+      v2n: null,
+      v3n: null,
+      i1: null,
+      i2: null
     },
     pm120: {
-      v12: { value: 0, unit: 'V', status: 'normal' },
-      v23: { value: 0, unit: 'V', status: 'normal' },
-      v34: { value: 0, unit: 'V', status: 'normal' },
-      i1: { value: 0, unit: 'A', status: 'normal' },
-      i2: { value: 0, unit: 'A', status: 'normal' },
+      v1n: null,
+      v2n: null,
+      v3n: null,
+      i1: null,
+      i2: null
     }
   });
+
+  // Move PowerMeterControl functions here
+  const API_BASE_URL = "http://127.0.0.1:5000/api";
+
+  // Fetch phase 1 line-to-neutral voltage (480V)
+  const get480V1N = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/pm480/V1N`);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching 480V V1N:', error);
+      return null;
+    }
+  };
+
+  // Fetch phase 2 line-to-neutral voltage (480V)
+  const get480V2N = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/pm480/V2N`);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching 480V V2N:', error);
+      return null;
+    }
+  };
+
+  // Fetch phase 3 line-to-neutral voltage (480V)
+  const get480V3N = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/pm480/V3N`);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching 480V V3N:', error);
+      return null;
+    }
+  };
+
+  // Fetch phase 1 current (480V)
+  const get480I1 = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/pm480/I1`);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching 480V I1:', error);
+      return null;
+    }
+  };
+
+  // Fetch phase 2 current (480V)
+  const get480I2 = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/pm480/I2`);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching 480V I2:', error);
+      return null;
+    }
+  };
+
+  // Fetch phase 1 line-to-neutral voltage (120V)
+  const get120V1N = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/pm120/V1N`);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching 120V V1N:', error);
+      return null;
+    }
+  };
+
+  // Fetch phase 2 line-to-neutral voltage (120V)
+  const get120V2N = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/pm120/V2N`);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching 120V V2N:', error);
+      return null;
+    }
+  };
+
+  // Fetch phase 3 line-to-neutral voltage (120V)
+  const get120V3N = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/pm120/V3N`);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching 120V V3N:', error);
+      return null;
+    }
+  };
+
+  // Fetch phase 1 current (120V)
+  const get120I1 = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/pm120/I1`);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching 120V I1:', error);
+      return null;
+    }
+  };
+
+  // Fetch phase 2 current (120V)
+  const get120I2 = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/pm120/I2`);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching 120V I2:', error);
+      return null;
+    }
+  };
 
   // Function to determine power meter status based on value
   const getPowerStatus = (name, value) => {
@@ -38,9 +160,9 @@ const PowerMeterPanel = () => {
     
     // Define thresholds for different measurements
     const thresholds = {
-      v12: { warning: 500, critical: 550 }, // Adjust these thresholds as needed
-      v23: { warning: 500, critical: 550 },
-      v34: { warning: 500, critical: 550 },
+      v1n: { warning: 500, critical: 550 }, // Adjust these thresholds as needed
+      v2n: { warning: 500, critical: 550 },
+      v3n: { warning: 500, critical: 550 },
       i1: { warning: 80, critical: 100 },
       i2: { warning: 80, critical: 100 }
     };
@@ -57,97 +179,44 @@ const PowerMeterPanel = () => {
   useEffect(() => {
     const fetchPowerData = async () => {
       try {
-        // Fetch all power meter data in parallel
-        const [
-          pm480V1N,
-          pm480V2N,
-          pm480V3N,
-          pm480I1,
-          pm480I2,
-          pm120V1N,
-          pm120V2N,
-          pm120V3N,
-          pm120I1,
-          pm120I2
-        ] = await Promise.all([
-          get480V1N(),
-          get480V2N(),
-          get480V3N(),
-          get480I1(),
-          get480I2(),
-          get120V1N(),
-          get120V2N(),
-          get120V3N(),
-          get120I1(),
-          get120I2()
-        ]);
+        // Sequentially fetch data to avoid connection issues
+        const pm480v1n = await get480V1N();
+        const pm480v2n = await get480V2N();
+        const pm480v3n = await get480V3N();
+        const pm480i1 = await get480I1();
+        const pm480i2 = await get480I2();
         
-        // Update power meter data with fetched values and determine status
+        const pm120v1n = await get120V1N();
+        const pm120v2n = await get120V2N();
+        const pm120v3n = await get120V3N();
+        const pm120i1 = await get120I1();
+        const pm120i2 = await get120I2();
+
         setPowerData({
           pm480: {
-            v1n: { 
-              value: pm480V1N !== null ? Number(pm480V1N).toFixed(1) : 'N/A', 
-              unit: 'V', 
-              status: getPowerStatus('v1n', pm480V1N) 
-            },
-            v2n: { 
-              value: pm480V2N !== null ? Number(pm480V2N).toFixed(1) : 'N/A', 
-              unit: 'V', 
-              status: getPowerStatus('v2n', pm480V2N) 
-            },
-            v3n: { 
-              value: pm480V3N !== null ? Number(pm480V3N).toFixed(1) : 'N/A', 
-              unit: 'V', 
-              status: getPowerStatus('v3n', pm480V3N) 
-            },
-            i1: { 
-              value: pm480I1 !== null ? Number(pm480I1).toFixed(1) : 'N/A', 
-              unit: 'A', 
-              status: getPowerStatus('i1', pm480I1) 
-            },
-            i2: { 
-              value: pm480I2 !== null ? Number(pm480I2).toFixed(1) : 'N/A', 
-              unit: 'A', 
-              status: getPowerStatus('i2', pm480I2) 
-            }
+            v1n: pm480v1n,
+            v2n: pm480v2n,
+            v3n: pm480v3n,
+            i1: pm480i1,
+            i2: pm480i2
           },
           pm120: {
-            v1n: { 
-              value: pm120V1N !== null ? Number(pm120V1N).toFixed(1) : 'N/A', 
-              unit: 'V', 
-              status: getPowerStatus('v1n', pm120V1N) 
-            },
-            v2n: { 
-              value: pm120V2N !== null ? Number(pm120V2N).toFixed(1) : 'N/A', 
-              unit: 'V', 
-              status: getPowerStatus('v2n', pm120V2N) 
-            },
-            v3n: { 
-              value: pm120V3N !== null ? Number(pm120V3N).toFixed(1) : 'N/A', 
-              unit: 'V', 
-              status: getPowerStatus('v3n', pm120V3N) 
-            },
-            i1: { 
-              value: pm120I1 !== null ? Number(pm120I1).toFixed(1) : 'N/A', 
-              unit: 'A', 
-              status: getPowerStatus('i1', pm120I1) 
-            },
-            i2: { 
-              value: pm120I2 !== null ? Number(pm120I2).toFixed(1) : 'N/A', 
-              unit: 'A', 
-              status: getPowerStatus('i2', pm120I2) 
-            }
+            v1n: pm120v1n,
+            v2n: pm120v2n,
+            v3n: pm120v3n,
+            i1: pm120i1,
+            i2: pm120i2
           }
         });
       } catch (error) {
-        console.error('Error fetching power meter data:', error);
+        console.error('Error fetching power data:', error);
       }
     };
 
     // Initial fetch
     fetchPowerData();
 
-    // Set up polling interval (every 5 seconds)
+    // Set up polling interval
     const intervalId = setInterval(fetchPowerData, 5000);
 
     // Clean up interval on component unmount

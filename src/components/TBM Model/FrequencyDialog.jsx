@@ -10,7 +10,7 @@ import {
   Box 
 } from '@mui/material';
 import { useTbmState } from './TbmStateContext';
-import { startMotor, setFrequency } from '../../components/API Control/VfdControl'
+import axios from 'axios';
 
 const FrequencyDialog = () => {
   const { 
@@ -66,6 +66,115 @@ const FrequencyDialog = () => {
         return 'Set Water Pump Frequency';
       default:
         return 'Set Frequency';
+    }
+  };
+
+  const startMotor = async (motorType) => {
+    if (motorType === 'cutterface') {
+      return startCutterFaceMotor();
+    } else if (motorType === 'waterpump') {
+      return startWaterPumpMotor();
+    } else {
+      console.error('Invalid motor type:', motorType);
+      return { success: false, error: 'Invalid motor type' };
+    }
+  };
+
+  const stopMotor = async (motorType) => {
+    if (motorType === 'cutterface') {
+      return stopCutterFaceMotor();
+    } else if (motorType === 'waterpump') {
+      return stopWaterPumpMotor();
+    } else {
+      console.error('Invalid motor type:', motorType);
+      return { success: false, error: 'Invalid motor type' };
+    }
+  };
+
+  const setFrequency = async (motorType, frequency) => {
+    if (motorType === 'cutterface') {
+      return setCutterFaceFrequency(frequency);
+    } else if (motorType === 'waterpump') {
+      return setWaterPumpFrequency(frequency);
+    } else {
+      console.error('Invalid motor type:', motorType);
+      return { success: false, error: 'Invalid motor type' };
+    }
+  };
+
+  const startCutterFaceMotor = async () => {
+    try {
+      const response = await axios.get(
+        "http://127.0.0.1:5000/api/startup-sequence"
+      );
+      console.log('Cutter face motor started:', response.data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error starting cutter face motor:', error);
+      return { success: false, error };
+    }
+  };
+
+  const stopCutterFaceMotor = async () => {
+    try {
+      const response = await axios.get("http://127.0.0.1:5000/api/stop-motor");
+      console.log('Cutter face motor stopped:', response.data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error stopping cutter face motor:', error);
+      return { success: false, error };
+    }
+  };
+
+  const setCutterFaceFrequency = async (frequency) => {
+    try {
+      const response = await axios.post(
+        "http://127.0.0.1:5000/api/set-frequency",
+        { frequency: frequency * 333.33 }
+      );
+      console.log('Cutter face frequency set:', response.data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error setting cutter face frequency:', error);
+      return { success: false, error };
+    }
+  };
+
+  const startWaterPumpMotor = async () => {
+    try {
+      const response = await axios.get(
+        "http://127.0.0.1:5000/api/wp/startup-sequence"
+      );
+      console.log('Water pump motor started:', response.data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error starting water pump motor:', error);
+      return { success: false, error };
+    }
+  };
+
+  const stopWaterPumpMotor = async () => {
+    try {
+      const response = await axios.get("http://127.0.0.1:5000/api/wp/stop-motor");
+      console.log('Water pump motor stopped:', response.data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error stopping water pump motor:', error);
+      return { success: false, error };
+    }
+  };
+
+  const setWaterPumpFrequency = async (frequency) => {
+    try {
+      const response = await axios.post(
+        "http://127.0.0.1:5000/api/wp/set-frequency",
+        { frequency: frequency * 333.33 }
+      );
+      console.log('Water pump frequency set:', response.data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error setting water pump frequency:', error);
+      return { success: false, error };
     }
   };
 

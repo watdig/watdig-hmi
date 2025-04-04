@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import TbmVisualization from "./TbmVisualization";
 import ControlPanel from "./ControlPanel";
-import SensorPanel from "./SensorPanel";
-import SteeringControls from "./SteeringControls";
+import SensorDataTable from "../Sensors/SensorDataTable";
 import NetworkStatus from "./NetworkStatus";
 import EmergencyStop from "./EmergencyStop";
 import ConfirmationDialog from "./ConfirmationDialog";
@@ -10,7 +9,6 @@ import FrequencyDialog from "./FrequencyDialog";
 import { useTbmState } from "./TbmStateContext";
 import ModbusControl from '../ModbusControl/ModbusControl';
 import TbmStateBanner from "./TbmStateBanner";
-import PowerMeterPanel from "./PowerMeterPanel";
 
 const TbmModel = () => {
   const {
@@ -35,17 +33,14 @@ const TbmModel = () => {
     },
     tbmDashboard: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+      gridTemplateColumns: '1fr 2fr',
       gap: '20px'
     },
     networkSection: {
       display: 'grid',
       gridTemplateColumns: '1fr 1fr',
-      gap: '20px'
-    },
-    powerMeterSection: {
-      marginTop: '20px', // Add spacing between sections
-      width: '100%'      // Ensure full width
+      gap: '20px',
+      marginTop: '20px'
     }
   };
 
@@ -56,16 +51,12 @@ const TbmModel = () => {
       
       <div style={styles.tbmDashboard}>
         <ControlPanel />
-        <SensorPanel />
-        <SteeringControls />
-        <div style={styles.networkSection}>
-          <NetworkStatus />
-          <ModbusControl />
-        </div>
+        <SensorDataTable />
       </div>
-
-      <div style={styles.powerMeterSection}>
-        <PowerMeterPanel />
+      
+      <div style={styles.networkSection}>
+        <NetworkStatus />
+        <ModbusControl />
       </div>
 
       <EmergencyStop 

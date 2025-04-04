@@ -17,7 +17,7 @@ logging.getLogger('pymodbus').setLevel(logging.ERROR)
 
 # Connection parameters
 PORT = '/dev/tty.usbserial-0001'
-BAUDRATE = 115200
+BAUDRATE = 9600
 PARITY = 'N'
 UNIT_ID = 1
 STOPBITS = 1
@@ -73,7 +73,7 @@ def main():
     client = initialize()
     if client.connect() is True:
         # Read the Modbus ID and use it for future communication
-        response = read_register(client, 0, 1, 255)
+        r'''''esponse = read_register(client, 0, 1, 255)
         UNIT_ID = response.registers[0]
         while True:
             print("Enter numbers separated by spaces, enter q to terminate program")
@@ -93,7 +93,28 @@ def main():
                     for i in range(3, command[1] + 3):
                         data.append(command[i])
                         print(data)
-                    response = write_register(client, command[2], data, UNIT_ID)
+                    response = write_register(client, command[2], data, UNIT_ID)'''''
+        
+        #for multiple devices on network
+        while True:
+            print("Enter numbers separated by spaces, enter q to terminate program")
+            user_input = input("Format: NodeID | Read(0)/Write(1) | # Registers | Start Register | Data:")
+            if user_input == "q":
+                break
+            command = list(map(int, user_input.split()))
+            if len(command) < 4:
+                print("Not Enough inputs")
+            elif command[1] > 1:
+                print("Read/Write input invalid")
+            else:
+                if command[1] == 0:
+                    response = read_register(client, command[3], command[2], command[0])
+                else:
+                    data = []
+                    for i in range(4, command[2] + 4):
+                        data.append(command[i])
+                        #print(data)
+                    response = write_register(client, command[3], data, command[0])
         client.close()
 
 if __name__ == "__main__":

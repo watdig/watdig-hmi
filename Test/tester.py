@@ -17,7 +17,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class ModbusConnection:
-    def __init__(self, port='/dev/tty.SLAB_USBtoUART', baudrate=9600, timeout=5):
+    def __init__(self, port='/dev/tty.SLAB_USBtoUART', baudrate=115200, timeout=1):
         # Initialize the Modbus connection parameters
         self.port = port  # Serial port to connect to
         self.baudrate = baudrate  # Baud rate for the connection
@@ -226,10 +226,10 @@ modbus.write_register(0, 0b1101111, 1)
 while True:
     modbus.write_register(1, 10000, 1)
     time.sleep(0.1)'''
-modbus.read_register(103, 3)
+modbus.write_register(6, 3, 7)
 
 # Test code with more error handling
-try:
+'''try:
     # First try reading the register to verify access
     logger.info("Testing read access...")
     initial_value = modbus.read_register(15, 6)
@@ -260,4 +260,4 @@ finally:
             modbus.client.close()
             logger.info("Modbus connection closed")
     except Exception as close_error:
-        logger.error(f"Error closing connection: {str(close_error)}")
+        logger.error(f"Error closing connection: {str(close_error)}")'''

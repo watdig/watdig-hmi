@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useTbmState } from './TbmStateContext';
-import { resetEstop } from '../API Control/EstopControl';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import axios from 'axios';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 
 const EmergencyStop = () => {
   const { 
@@ -51,6 +50,61 @@ const EmergencyStop = () => {
     },
     errorDialogActions: {
       padding: '10px 20px 20px',
+    }
+  };
+
+  // Move EstopControl functions here
+  const activateEstop = async () => {
+    try {
+      // Turn off both 120V and 480V power
+      await set120V(false);
+      await set480V(false);
+      
+      console.log('E-Stop activated');
+      return { success: true };
+    } catch (error) {
+      console.error('Error activating E-Stop:', error);
+      return { success: false, error };
+    }
+  };
+
+  const resetEstop = async () => {
+    try {
+      console.log('E-Stop reset');
+      return { success: true };
+    } catch (error) {
+      console.error('Error resetting E-Stop:', error);
+      return { success: false, error };
+    }
+  };
+
+  const set120V = async (state) => {
+    try {
+      const value = state ? 1 : 0;
+      const response = await axios.post(
+        "http://127.0.0.1:5000/api/pm/set-120V",
+        { value }
+      );
+      console.log(`120V power set to ${state ? 'ON' : 'OFF'}`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error setting 120V:', error);
+      return { success: false, error };
+    }
+  };
+
+  const set480V = async (state) => {
+    try {
+      const value = state ? 1 : 0;
+      const response = await axios.post(
+        "http://127.0.0.1:5000/api/pm/set-480V",
+        { value }
+      );
+      console.log(`480V power set to ${state ? 'ON' : 'OFF'}`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error setting 480V:', error);
+      return { success: false, error };
     }
   };
 
