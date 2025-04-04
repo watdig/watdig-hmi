@@ -18,6 +18,7 @@ from Services.database_service import Database as db
 
 modbus_bp = Blueprint('modbus', __name__)
 modbus_client = ModbusConnection()
+modbus_client.initialize()
 
 # Create a global instance of the simulation
 water_pump_sim = WaterPumpSimulation()
@@ -76,7 +77,7 @@ def write_register():
         if not modbus_client.client or not modbus_client.client.is_socket_open():
             return jsonify({'message': 'No Modbus connection available'}), 503
 
-        modbus_client.write_register(register, value, unit_id)
+        modbus_client.write_register(register, [value], unit_id)
         return jsonify({
             'message': 'Write successful',
             'register': register,
@@ -174,25 +175,35 @@ def control_water_pump():
 '''
     RS485 Endpoint
 '''
+
 @modbus_bp.route('/rs485', methods=['GET'])
 def get_rs485_status():
     """Get the current status of the RS485 connection"""
     try:
-        # Try to read a register to verify connection
-        try:
-            # Use any simple read operation to test connection
-            #modbus_client.read_register_holding(0, 1)
-            return jsonify({
-                "connected": True,
-                "message": "RS485 connection is active"
-            })
-        except Exception as e:
-            error(f"RS485 communication test failed: {str(e)}")
+        # Try to read a register to check connection
+        result = modbus_client.read_register_holding(0, 3)
+        
+        # Check if result is None or an error
+        if result is None:
             return jsonify({
                 "connected": False,
-                "message": f"RS485 communication test failed: {str(e)}"
+                "message": "RS485 connection failed: No response"
             })
+        
+        # Check if result is an error object (has isError method and returns True)
+        if hasattr(result, 'isError') and result.isError():
+            return jsonify({
+                "connected": False,
+                "message": f"RS485 connection error: {result}"
+            })
+        
+        # If we get here, connection is good
+        return jsonify({
+            "connected": True,
+            "message": "RS485 connection is active"
+        })
     except Exception as e:
+        # Any exception means the connection failed
         error(f"RS485 connection check failed: {str(e)}")
         return jsonify({
             "connected": False,
@@ -202,144 +213,184 @@ def get_rs485_status():
 '''
 Power Meter Endpoints
 '''
-@modbus_bp.route('/pm480/V1N', methods=['GET'])
+'''@modbus_bp.route('/api/pm480/V1N', methods=['GET'])
 def get_480_V1N():
     try:
-        x = (modbus_client.read_register_input(8, 3) & 0xFFFF)  
-        y = (modbus_client.read_register_input(9, 3) & 0xFFFF) << 16
+        # Read both registers in a single operation
+        result = modbus_client.read_register_input(8, 2, 3)
+        x = result.registers[0] & 0xFFFF
+        y = (result.registers[1] & 0xFFFF) << 16
         z = x + y
         float_value = struct.unpack('<f', struct.pack('<I', z))[0]
         return jsonify(float_value)
     except Exception as e:
-        error(f"Error reading 480V V1N: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({'message': str(e)}), 500
+        error_msg = f"Error reading 480V V1N: {str(e)}"
+        error(error_msg)  # Log the error
+        return jsonify({"error": error_msg, "value": 0}), 200
 
-@modbus_bp.route('/pm480/V2N', methods=['GET'])
+@modbus_bp.route('/api/pm480/V2N', methods=['GET'])
 def get_480_V2N():
     try:
-        x = (modbus_client.read_register_input(10, 3) & 0xFFFF)  
-        y = (modbus_client.read_register_input(11, 3) & 0xFFFF) << 16
+        # Read both registers in a single operation
+        result = modbus_client.read_register_input(10, 2, 3)
+        x = result.registers[0] & 0xFFFF
+        y = (result.registers[1] & 0xFFFF) << 16
         z = x + y
         float_value = struct.unpack('<f', struct.pack('<I', z))[0]
         return jsonify(float_value)
     except Exception as e:
-        error(f"Error reading 480V V2N: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({'message': str(e)}), 500
+        error_msg = f"Error reading 480V V2N: {str(e)}"
+        error(error_msg)
+        return jsonify({"error": error_msg, "value": 0}), 200
 
-@modbus_bp.route('/pm480/V3N', methods=['GET'])
+@modbus_bp.route('/api/pm480/V3N', methods=['GET'])
 def get_480_V3N():
     try:
-        x = (modbus_client.read_register_input(12, 3) & 0xFFFF)  
-        y = (modbus_client.read_register_input(13, 3) & 0xFFFF) << 16
+        # Read both registers in a single operation
+        result = modbus_client.read_register_input(12, 2, 3)
+        x = result.registers[0] & 0xFFFF
+        y = (result.registers[1] & 0xFFFF) << 16
         z = x + y
         float_value = struct.unpack('<f', struct.pack('<I', z))[0]
         return jsonify(float_value)
     except Exception as e:
-        error(f"Error reading 480V V3N: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({'message': str(e)}), 500
+        error_msg = f"Error reading 480V V3N: {str(e)}"
+        error(error_msg)
+        return jsonify({"error": error_msg, "value": 0}), 200
 
-@modbus_bp.route('/pm480/I1', methods=['GET'])
+@modbus_bp.route('/api/pm480/I1', methods=['GET'])
 def get_480_I1():
     try:
-        x = (modbus_client.read_register_input(16, 3) & 0xFFFF)  
-        y = (modbus_client.read_register_input(17, 3) & 0xFFFF) << 16
+        # Read both registers in a single operation
+        result = modbus_client.read_register_input(16, 2, 3)
+        x = result.registers[0] & 0xFFFF
+        y = (result.registers[1] & 0xFFFF) << 16
         z = x + y
         float_value = struct.unpack('<f', struct.pack('<I', z))[0]
         return jsonify(float_value)
     except Exception as e:
-        error(f"Error reading 480V I1: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({'message': str(e)}), 500
+        error_msg = f"Error reading 480V I1: {str(e)}"
+        error(error_msg)
+        return jsonify({"error": error_msg, "value": 0}), 200
 
-@modbus_bp.route('/pm480/I2', methods=['GET'])
+@modbus_bp.route('/api/pm480/I2', methods=['GET'])
 def get_480_I2():
     try:
-        x = (modbus_client.read_register_input(18, 3) & 0xFFFF)  
-        y = (modbus_client.read_register_input(19, 3) & 0xFFFF) << 16
+        # Read both registers in a single operation
+        result = modbus_client.read_register_input(18, 2, 3)
+        x = result.registers[0] & 0xFFFF
+        y = (result.registers[1] & 0xFFFF) << 16
         z = x + y
         float_value = struct.unpack('<f', struct.pack('<I', z))[0]
         return jsonify(float_value)
     except Exception as e:
-        error(f"Error reading 480V I2: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({'message': str(e)}), 500
+        error_msg = f"Error reading 480V I2: {str(e)}"
+        error(error_msg)
+        return jsonify({"error": error_msg, "value": 0}), 200
 
 # 120V Power Meter endpoints
-@modbus_bp.route('/pm120/V1N', methods=['GET'])
+@modbus_bp.route('/api/pm120/V1N', methods=['GET'])
 def get_120_V1N():
     try:
-        x = (modbus_client.read_register_input(0, 4) & 0xFFFF)  
-        y = (modbus_client.read_register_input(1, 4) & 0xFFFF) << 16
+        # Read both registers in a single operation
+        result = modbus_client.read_register_input(0, 2, 4)
+        x = result.registers[0] & 0xFFFF
+        y = (result.registers[1] & 0xFFFF) << 16
         z = x + y
         float_value = struct.unpack('<f', struct.pack('<I', z))[0]
         return jsonify(float_value)
     except Exception as e:
-        error(f"Error reading 120V V1N: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({'message': str(e)}), 500
+        error_msg = f"Error reading 120V V1N: {str(e)}"
+        error(error_msg)
+        return jsonify({"error": error_msg, "value": 0}), 200
 
-@modbus_bp.route('/pm120/V2N', methods=['GET'])
+@modbus_bp.route('/api/pm120/V2N', methods=['GET'])
 def get_120_V2N():
     try:
-        x = (modbus_client.read_register_input(2, 4) & 0xFFFF)  
-        y = (modbus_client.read_register_input(3, 4) & 0xFFFF) << 16
+        # Read both registers in a single operation
+        result = modbus_client.read_register_input(2, 2, 4)
+        x = result.registers[0] & 0xFFFF
+        y = (result.registers[1] & 0xFFFF) << 16
         z = x + y
         float_value = struct.unpack('<f', struct.pack('<I', z))[0]
         return jsonify(float_value)
     except Exception as e:
-        error(f"Error reading 120V V2N: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({'message': str(e)}), 500
+        error_msg = f"Error reading 120V V2N: {str(e)}"
+        error(error_msg)
+        return jsonify({"error": error_msg, "value": 0}), 200
 
-@modbus_bp.route('/pm120/V3N', methods=['GET'])
+@modbus_bp.route('/api/pm120/V3N', methods=['GET'])
 def get_120_V3N():
     try:
-        x = (modbus_client.read_register_input(4, 4) & 0xFFFF)  
-        y = (modbus_client.read_register_input(5, 4) & 0xFFFF) << 16
+        # Read both registers in a single operation
+        result = modbus_client.read_register_input(4, 2, 4)
+        x = result.registers[0] & 0xFFFF
+        y = (result.registers[1] & 0xFFFF) << 16
         z = x + y
         float_value = struct.unpack('<f', struct.pack('<I', z))[0]
         return jsonify(float_value)
     except Exception as e:
-        error(f"Error reading 120V V3N: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({'message': str(e)}), 500
+        error_msg = f"Error reading 120V V3N: {str(e)}"
+        error(error_msg)
+        return jsonify({"error": error_msg, "value": 0}), 200
 
-@modbus_bp.route('/pm120/I1', methods=['GET'])
+@modbus_bp.route('/api/pm120/I1', methods=['GET'])
 def get_120_I1():
     try:
-        x = (modbus_client.read_register_input(16, 4) & 0xFFFF)  
-        y = (modbus_client.read_register_input(17, 4) & 0xFFFF) << 16
+        # Read both registers in a single operation
+        result = modbus_client.read_register_input(16, 2, 4)
+        x = result.registers[0] & 0xFFFF
+        y = (result.registers[1] & 0xFFFF) << 16
         z = x + y
         float_value = struct.unpack('<f', struct.pack('<I', z))[0]
         return jsonify(float_value)
     except Exception as e:
-        error(f"Error reading 120V I1: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({'message': str(e)}), 500
+        error_msg = f"Error reading 120V I1: {str(e)}"
+        error(error_msg)
+        return jsonify({"error": error_msg, "value": 0}), 200
 
-@modbus_bp.route('/pm120/I2', methods=['GET'])
+@modbus_bp.route('/api/pm120/I2', methods=['GET'])
 def get_120_I2():
     try:
-        x = (modbus_client.read_register_input(18, 4) & 0xFFFF)  
-        y = (modbus_client.read_register_input(19, 4) & 0xFFFF) << 16
+        # Read both registers in a single operation
+        result = modbus_client.read_register_input(18, 2, 4)
+        x = result.registers[0] & 0xFFFF
+        y = (result.registers[1] & 0xFFFF) << 16
         z = x + y
         float_value = struct.unpack('<f', struct.pack('<I', z))[0]
         return jsonify(float_value)
     except Exception as e:
-        error(f"Error reading 120V I2: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({'message': str(e)}), 500
+        error_msg = f"Error reading 120V I2: {str(e)}"
+        error(error_msg)
+        return jsonify({"error": error_msg, "value": 0}), 200'''
+
+'''
+IMU data
+'''
 
    
 '''
-CutterHead VFD Endpoints
+#CutterHead VFD Endpoints
 '''
 
 @modbus_bp.route('/api/startup-sequence', methods=['GET'])
 def startup_sequence():
-    modbus_client.write_register(0, 0b110, 1)
+    modbus_client.write_register(0, 0b110, 2)
     time.sleep(0.1)
-    modbus_client.write_register(0, 0b111, 1)
-    modbus_client.write_register(0, 0b1111, 1)
-    modbus_client.write_register(0, 0b101111, 1)
-    modbus_client.write_register(0, 0b1101111, 1)
+    modbus_client.write_register(0, 0b111, 2)
+    modbus_client.write_register(0, 0b1111, 2)
+    modbus_client.write_register(0, 0b101111, 2)
+    modbus_client.write_register(0, 0b1101111, 2)
+    modbus_client.write_register(0, [6], 2)
+    time.sleep(0.1)
+    modbus_client.write_register(0, [7], 2)
+    modbus_client.write_register(0, [15], 2)
+    modbus_client.write_register(0, [47], 2)
+    modbus_client.write_register(0, [111], 2)
 
 @modbus_bp.route('/api/stop-motor', methods=['GET'])
 def stop_motor():
-    modbus_client.write_register(0, 0, 1)
+    modbus_client.write_register(0, [0], 2)
 
 @modbus_bp.route('/api/set-frequency', methods=['POST'])
 def set_frequency():
@@ -357,7 +408,7 @@ def set_frequency():
         frequency = int(frequency)
         if -20000 <= frequency <= 20000:  # Allow negative values for reverse
             try:
-                modbus_client.write_register(1, frequency, 1)
+                modbus_client.write_register(1, [frequency], 2)
                 info(f"Successfully set frequency to {frequency} ({(frequency * 60/20000):.1f} Hz)")
                 return jsonify({
                     "status": "success",
@@ -400,7 +451,7 @@ def reverse_frequency():
         frequency = int(frequency)
         if -20000 <= frequency <= 20000:  # Allow negative values for reverse
             try:
-                modbus_client.write_register(1, frequency, 1)
+                modbus_client.write_register(1, [frequency], 2)
                 info(f"Successfully set frequency to {frequency} ({(frequency * 60/20000):.1f} Hz)")
                 return jsonify({
                     "status": "success",
@@ -427,25 +478,31 @@ def reverse_frequency():
         }), 500
 
 '''
-Water Pump VFD Endpoints
+#Water Pump VFD Endpoints
 '''
 @modbus_bp.route('/api/wp/startup-sequence', methods=['GET'])
 def startup_sequence_wp():
-    modbus_client.write_register(0, 0b110, 2)
+    modbus_client.write_register(0, 0b110, 1)
     time.sleep(0.1)
-    modbus_client.write_register(0, 0b111, 2)
-    modbus_client.write_register(0, 0b1111, 2)
-    modbus_client.write_register(0, 0b101111, 2)
-    modbus_client.write_register(0, 0b1101111, 2)
+    modbus_client.write_register(0, 0b111, 1)
+    modbus_client.write_register(0, 0b1111, 1)
+    modbus_client.write_register(0, 0b101111, 1)
+    modbus_client.write_register(0, 0b1101111, 1)
+    modbus_client.write_register(0, [6], 1)
+    time.sleep(0.1)
+    modbus_client.write_register(0, [7], 1)
+    modbus_client.write_register(0, [15], 1)
+    modbus_client.write_register(0, [47], 1)
+    modbus_client.write_register(0, [111], 1)
 
 @modbus_bp.route('/api/wp/stop-motor', methods=['GET'])
 def stop_motor_wp():
-    modbus_client.write_register(0, 0, 2)
+    modbus_client.write_register(0, 0, 1)
 
 #Currently not working
 @modbus_bp.route('/api/wp/reverse-motor', methods=['GET'])
 def reverse_motor_wp():
-    modbus_client.write_register(0, 0, 2)
+    modbus_client.write_register(0, 0, 1)
 
 @modbus_bp.route('/api/wp/set-frequency', methods=['POST'])
 def set_frequency_wp():
@@ -463,7 +520,7 @@ def set_frequency_wp():
         frequency = int(frequency)
         if -20000 <= frequency <= 20000:  # Allow negative values for reverse
             try:
-                modbus_client.write_register(1, frequency, 2)
+                modbus_client.write_register(1, [frequency], 1)
                 info(f"Successfully set frequency to {frequency} ({(frequency * 60/20000):.1f} Hz)")
                 return jsonify({
                     "status": "success",
@@ -506,7 +563,7 @@ def reverse_frequency_wp():
         frequency = int(frequency)
         if -20000 <= frequency <= 20000:  # Allow negative values for reverse
             try:
-                modbus_client.write_register(1, frequency, 2)
+                modbus_client.write_register(1, [frequency], 2)
                 info(f"Successfully set frequency to {frequency} ({(frequency * 60/20000):.1f} Hz)")
                 return jsonify({
                     "status": "success",
@@ -533,19 +590,23 @@ def reverse_frequency_wp():
         }), 500
 
 '''
-    HELPER FUNCTIONS
+#    HELPER FUNCTIONS
 '''
 
 def handle_modbus_errors(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         try:
+            # Apply a timeout to the function execution
             return f(*args, **kwargs)
         except Exception as e:
+            # Log the error but don't allow it to block the server
             error(f"Error in {f.__name__}: {str(e)}")
+            # Return a simple error response
             return jsonify({
                 "error": "Modbus communication error",
-                "details": str(e)
+                "details": str(e),
+                "status": "error"
             }), 503
     return wrapper
 
@@ -625,11 +686,11 @@ def get_cb_temp():
 @handle_modbus_errors
 def get_mot_therm_stress():
     """Get motor thermal stress level"""
-    mot_therm_stress = modbus_client.read_register_holding(152, 1)
-    return format_response(mot_therm_stress, "Motor Thermal Stress", "%")
+    mot_therm_stress = modbus_client.read_register_holding(152, 2)
+    return jsonify(mot_therm_stress)
 
 '''
-FAULT HISTORY REGISTERS (CUTTER FACE)
+#FAULT HISTORY REGISTERS (CUTTER FACE)
 '''
 
 @modbus_bp.route('/api/fault/latest-fault', methods=['GET'])
@@ -698,68 +759,139 @@ Do waterpump later
 '''
 Below Ground Board Endpoints
 '''
+'''
 @modbus_bp.route('/api/bg/get-thrustTop', methods=['GET'])
 def get_thrustTop():
-    value = modbus.read_register_holding(9, 5)
-    return value
+    response = modbus_client.read_register_holding(9, 5)
+    # Handle the response object correctly
+    if hasattr(response, 'registers') and len(response.registers) > 0:
+        return jsonify(response.registers[0])
+    return 1000  # Return None if no valid data
 
 @modbus_bp.route('/api/bg/get-thrustLeft', methods=['GET'])
 def get_thrustLeft():
-    value = modbus.read_register_holding(10, 5)
-    return jsonify(value)
+    response = modbus_client.read_register_holding(10, 5)
+    if hasattr(response, 'registers') and len(response.registers) > 0:
+        return jsonify(response.registers[0])
+    return 1000
 
 @modbus_bp.route('/api/bg/get-thrustRight', methods=['GET'])
 def get_thrustRight():
-    value = modbus.read_register_holding(11, 5)
-    return jsonify(value)
-
+    response = modbus_client.read_register_holding(11, 5)
+    if hasattr(response, 'registers') and len(response.registers) > 0:
+        return jsonify(response.registers[0])
+    return 1000
+'''
 @modbus_bp.route('/api/bg/motor-temp', methods=['GET'])
 def get_motor_temp():
-    value = modbus_client.read_register_holding(12, 5)
-    return jsonify(value)
+    response = modbus_client.read_register_holding(12, 5)
+    print(response.registers[0])
+    if hasattr(response, 'registers') and len(response.registers) > 0:
+        adc_value = response.registers[0]
+
+        # Known calibration points
+        adc1, temp1 = 650, 22.0
+        adc2, temp2 = 4000, 50.0
+
+        # Linear equation: Temp = m * adc + b
+        m = (temp2 - temp1) / (adc2 - adc1)
+        b = temp1 - m * adc1
+
+        temperature = m * adc_value + b
+
+        return jsonify(round(temperature, 1))
+    
+    return jsonify(None)
+
 
 @modbus_bp.route('/api/bg/earth-preassure', methods=['GET'])
 def get_earth_pressure():
-    value = modbus_client.read_register_holding(13, 5)
-    return jsonify(value)
+    response = modbus_client.read_register_holding(13, 5)
+    if hasattr(response, 'registers') and len(response.registers) > 0:
+        return jsonify(response.registers[0])
+    return jsonify(None)
 
 @modbus_bp.route('/api/bg/flame', methods=['GET'])
 def get_flame():
-    value = modbus_client.read_register_holding(14, 5)
-    return jsonify(value)
+    response = modbus_client.read_register_holding(14, 5)
+    if hasattr(response, 'registers') and len(response.registers) > 0:
+        return jsonify(response.registers[0])
+    return jsonify(None)
 
-@modbus_bp.route('/api/bg/actuator-A', methods=['GET'])
+'''@modbus_bp.route('/api/bg/actuator-A', methods=['GET'])
 def get_actuator_a():
-    value = modbus_client.read_register_holding(15, 5)
-    return jsonify(value)
+    response = modbus_client.read_register_holding(15, 5)
+    if hasattr(response, 'registers') and len(response.registers) > 0:
+        return jsonify(response.registers[0])
+    return jsonify(None)
 
 @modbus_bp.route('/api/bg/actuator-B', methods=['GET'])
 def get_actuator_b():
-    value = modbus_client.read_register_holding(16, 5)
-    return jsonify(value)
+    response = modbus_client.read_register_holding(16, 5)
+    if hasattr(response, 'registers') and len(response.registers) > 0:
+        return jsonify(response.registers[0])
+    return jsonify(None)
 
 @modbus_bp.route('/api/bg/actuator-C', methods=['GET'])
 def get_actuator_c():
-    value = modbus_client.read_register_holding(17, 5)
-    return jsonify(value)
+    response = modbus_client.read_register_holding(17, 5)
+    if hasattr(response, 'registers') and len(response.registers) > 0:
+        return jsonify(response.registers[0])
+    return jsonify(None)'''
 
 @modbus_bp.route('/api/bg/encoder-speed', methods=['GET'])
 def get_encoder_speed():
-    value = modbus_client.read_register_holding(62, 5)
-    return value
+    response = modbus_client.read_register_holding(62, 5)
+    if hasattr(response, 'registers') and len(response.registers) > 0:
+        return jsonify(response.registers[0])
+    return jsonify(None)
 
 '''
 Above Ground Board Endpoints
 '''
-@modbus_bp.route('/api/ag/oil-preassure', methods=['GET'])
+
+'''@modbus_bp.route('/api/ag/oil-preassure', methods=['GET'])
 def get_oil_pressure():
     value = modbus_client.read_register_holding(12, 6)
-    return jsonify(value)
+    return jsonify(value.registers[0])
 
 @modbus_bp.route('/api/ag/oil-temp', methods=['GET'])
 def get_oil_temp():
     value = modbus_client.read_register_holding(10, 6)
-    return jsonify(value)
+    return jsonify(value.registers[0])'''
+
+@modbus_bp.route('/api/ag/water-preassure', methods=['GET'])
+def get_water_pressure():
+    try:
+        value = modbus_client.read_register_holding(11, 6)
+        # Check if value is a successful response with registers
+        if hasattr(value, 'registers'):
+            return jsonify(value.registers[0])
+        else:
+            # This is an error response, handle it gracefully
+            return jsonify({"error": "Failed to read water pressure", "value": None}), 200
+    except Exception as e:
+        # Log the exception but return a valid response
+        print(f"Error reading water pressure: {str(e)}")
+        return jsonify({"error": str(e), "value": None}), 200
+
+'''
+Turn On Powers
+'''
+'''@modbus_bp.route('/api/120VON', methods=['GET'])
+def turn_on_120VON():
+    try:
+        modbus_client.write_register(6, [1], 7)
+        time.sleep(0.2)
+        modbus_client.write_register(6, [3], 7)
+        return jsonify({"status": "success", "message": "120V signal sent"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500'''
+
+'''@modbus_bp.route('/api/pmb/read_id', methods=['GET'])
+def get_pm_board_id():
+    value = modbus_client.read_register_holding(0, 7)
+    return jsonify(value.registers[0])'''
 # Create a standalone app when this file is run directly
 def create_app():
     app = Flask(__name__)
