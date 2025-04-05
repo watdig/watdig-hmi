@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@fontsource/roboto": "^5.2.5",
+    "@mui/icons-material": "^6.4.8",
+    "@mui/material": "^6.4.8",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
@@ -14,6 +19,7 @@
     "react-scripts": "5.0.1",
     "sqlite3": "^5.1.7",
     "styled-components": "^6.1.13",
+    "three": "^0.174.0",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

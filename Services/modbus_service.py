@@ -1,94 +1,142 @@
-from flask import Flask, jsonify, request
 from pymodbus.client import ModbusSerialClient as ModbusClient
 import logging
-from functools import wraps
 import time
 import sys
-import glob
-import serial
-from Services.database_service import Database
-import sqlite3
-from flask_cors import CORS
-import threading
-from Services.logger_service import info, error, warning, debug, critical
 
 class ModbusConnection:
-    def __init__(self, port='/dev/tty.SLAB_USBtoUART', baudrate=9600, timeout=5):
-        self.port = port 
-        self.baudrate = baudrate
-        self.timeout = timeout
+    def __init__(self, 
+            port='/dev/tty.usbserial-0001', 
+            baudrate=9600, 
+            parity='N', 
+            unit_id=1, 
+            stopbits=1, 
+            bytesize=8, 
+            timeout=2):
+        # Set up logging
+        logging.basicConfig()
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.ERROR) 
+        logging.getLogger('pymodbus').setLevel(logging.ERROR)
+
+        # Connection parameters
+        self.PORT = port
+        self.BAUDRATE = baudrate
+        self.PARITY = parity
+        self.UNIT_ID = unit_id
+        self.STOPBITS = stopbits
+        self.BYTESIZE = bytesize
+        self.TIMEOUT = timeout
+
         self.client = None
-        self.connect()
+
+    def initialize(self):
+        self.client = ModbusClient(
+            port=self.PORT,
+            baudrate=self.BAUDRATE,
+            parity=self.PARITY,
+            stopbits=self.STOPBITS,
+            bytesize=self.BYTESIZE,
+            timeout=self.TIMEOUT,
+        )
+        return self.client
+
+    def read_register_holding(self, register: int, modbus_id=None):
+        if modbus_id is None:
+            modbus_id = self.UNIT_ID
+
+        try:
+            # Read the register value synchronously
+            result = self.client.read_holding_registers(register, 1, modbus_id)
+            
+            if result.isError():
+                print(f"Error message: {result}")
+                return result
+            
+            print("Returned values:", result.registers)
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Error reading register {register}: {e}")
+            return None
+    
+    def read_register_input(self, address, count, slave=1):
+        """
+        Read input registers and properly handle errors
+        """
+        try:
+            result = self.client.read_input_registers(address, count, slave)
+            
+            # Check if result is an integer (error code) or has an isError method
+            if isinstance(result, int):
+                raise Exception(f"Received error code: {result}")
+            elif hasattr(result, 'isError') and result.isError():
+                raise Exception(f"Modbus error: {result}")
+            
+            return result
+        except Exception as e:
+            # Log the error and re-raise it for the route handler to catch
+            self.logger.error(f"Error reading input register {address}: {e}")
+            raise
+            
+    def write_register(self, register: int, values: list, modbus_id=None):
+        if modbus_id is None:
+            modbus_id = self.UNIT_ID
+
+        try:
+            # Write the register value synchronously
+            result = self.client.write_registers(register, values, modbus_id, False)
+            
+            if result.isError():
+                print(f"Error message: {result}")
+                return result
+            
+            print(f"Writing register values {values} to address {result.address}")
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Error writing register {register}: {e}")
+            return None
 
     def connect(self):
-        retry_count = 0
-        max_retries = 3
-        
-        while retry_count < max_retries:
+        return self.client.connect() if self.client else False
+
+    def close(self):
+        if self.client:
+            self.client.close()
+
+    def interactive_mode(self):
+        if not self.client or not self.client.connect():
+            print("Could not establish Modbus connection")
+            return
+
+        '''while True:
+            print("Enter numbers separated by spaces, enter q to terminate program")
+            user_input = input("Format: Read(0)/Write(1) | # Registers | Start Register | Data:")
+            if user_input == "q":
+                break
+            
             try:
-                if self.client and self.client.is_socket_open():
-                    self.client.close()
-
-                self.client = ModbusClient(
-                    port=self.port,
-                    baudrate=self.baudrate,
-                    timeout=self.timeout
-                )
-
-                if self.client.connect():
-                    info(f"Successfully connected to Modbus device on {self.port}")
-                    return True
+                command = list(map(int, user_input.split()))
+                if len(command) < 3:
+                    print("Not Enough inputs")
+                elif command[0] > 1:
+                    print("Read/Write input invalid")
                 else:
-                    raise serial.serialutil.SerialException(f"Failed to open port {self.port}")
+                    if command[0] == 0:
+                        response = self.read_register(command[2], command[1], self.UNIT_ID)
+                    else:
+                        data = []
+                        for i in range(3, command[1] + 3):
+                            data.append(command[i])
+                            print(data)
+                        response = self.write_register(command[2], data, self.UNIT_ID)
+            except ValueError:
+                print("Invalid input. Please enter numeric values.")
 
-            except serial.serialutil.SerialException as e:
-                # Handle specific serial exceptions
-                if "Resource temporarily unavailable" in str(e):
-                    warning(f"Port {self.port} is temporarily unavailable, retrying...")
-                else:
-                    error(f"Serial exception on connection attempt {retry_count + 1}: {str(e)}")
-                    
-                retry_count += 1
-                time.sleep(1)
+        self.close()'''
 
-            except Exception as e:
-                error(f"Connection attempt {retry_count + 1} failed: {str(e)}")
-                retry_count += 1
-                time.sleep(1)
-                
-        error("Failed to connect after maximum retries")
-        return False
-
-    def read_register(self, register: int, slaveID: int):
-        try:
-            if not self.client or not self.client.is_socket_open():
-                if not self.connect():
-                    raise Exception("Failed to reconnect to Modbus device")
-
-            result = self.client.read_holding_registers(register, 1, slaveID)
-
-            if result.isError():
-                raise Exception(f"Modbus error reading register {register}")
-
-            return result.registers[0]
-
-        except Exception as e:
-            error(f"Error reading register {register}: {str(e)}")
-            raise
-
-    def write_register(self, register: int, value: int, slaveID: int):
-        try:
-            if not self.client or not self.client.is_socket_open():
-                if not self.connect():
-                    raise Exception("Failed to reconnect to Modbus device")
-
-            result = self.client.write_register(register, value, slaveID)
-
-            if result.isError():
-                raise Exception(f"Modbus error writing to register {register}")
-
-            info(f"Successfully wrote value {value} to register {register}")
-
-        except Exception as e:
-            error(f"Error writing to register {register}: {str(e)}")
-            raise
+# Example usage
+'''if __name__ == "__main__":
+    modbus_handler = ModbusConnection()
+    modbus_handler.initialize()
+    modbus_handler.interactive_mode()'''
