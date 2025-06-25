@@ -1,7 +1,7 @@
 from Services.CritSrvs.server import run_server
 import argparse
 
- ####
+ #### This Method is now depricated
  ## IMPORTANT: HOW TO RUN POLLING AND DATABASES SERVICES
  ## Run both services: python main.py --server --polling
  ## Run only the server: python main.py --server
