@@ -8,7 +8,7 @@ The WatDig HMI is a full-stack industrial control system designed to monitor and
 
 ## System Architecture
 
-### Backend Stack (Primary Focus)
+### Backend Stack
 
 The backend is built with **Python/Flask** and implements multiple industrial communication protocols:
 
