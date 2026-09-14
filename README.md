@@ -278,6 +278,9 @@ docker-compose down
 
 ## Development
 
+See [modular architecture and regression checks](docs/refactoring.md) for the
+route/state module boundaries, offline test commands, and preserved behavior.
+
 ### Backend Development
 The backend uses:
 - **Flask** for web framework
