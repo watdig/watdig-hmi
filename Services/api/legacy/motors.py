@@ -12,14 +12,17 @@ def register_routes(router, runtime):
         runtime.modbus.write_register(0, 0b1111, 1)
         runtime.modbus.write_register(0, 0b101111, 1)
         runtime.modbus.write_register(0, 0b1101111, 1)
+        return jsonify({"status": "success", "message": "Startup sequence completed"})
 
     @router.route("/api/stop-motor", methods=["GET"])
     def stop_motor():
         runtime.modbus.write_register(0, 0, 1)
+        return jsonify({"status": "success", "message": "Motor stopped"})
 
     @router.route("/api/reverse-motor", methods=["GET"])
     def reverse_motor():
         runtime.modbus.write_register(0, 0, 1)
+        return jsonify({"status": "success", "message": "Motor reversed"})
 
     @router.route("/api/set-frequency", methods=["POST"])
     def set_frequency():

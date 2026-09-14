@@ -1,5 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
-import GaugeChart from "react-gauge-chart";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import axios from "axios";
 import DataLogging from './DataLogging';
@@ -36,34 +35,6 @@ const NavItem = styled.button`
   &.active {
     border-bottom: 2px solid #fff;
   }
-`;
-
-const GaugeGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding-top: 80px;
-`;
-
-const GaugeContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-`;
-
-const GaugeLabel = styled.p`
-  margin-top: 0.5rem;
-  font-size: 1.1rem;
-  font-weight: bold;
-`;
-
-const StyledGaugeChart = styled(GaugeChart)`
-  fontSize: "18px", 
-  color: "#000000", 
 `;
 
 const ControlPanel = styled.div`
@@ -125,23 +96,7 @@ const ButtonGroup = styled.div`
   margin: 1rem 0;
 `;
 
-const ControlRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-`;
-
 const Homepage = () => {
-  const [speed, setSpeed] = useState(0);
-  const [frequency, setFrequency] = useState(0);
-  const [oilTemp, setOilTemp] = useState(0);
-  const [current, setCurrent] = useState(0);
-  const [torque, setTorque] = useState(0);
-  const [power, setPower] = useState(0);
-  const [dcBusVoltage, setDcBusVoltage] = useState(0);
-  const [outputVoltage, setOutputVoltage] = useState(0);
-  const [driveTemp, setDriveTemp] = useState(0);
-  const [driveCbTemp, setDriveCbTemp] = useState(0);
-  const [motThermStress, setMotThermStress] = useState(0);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [vfdFrequency, setVfdFrequency] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
@@ -149,63 +104,6 @@ const Homepage = () => {
   const [waterPumpFrequency, setWaterPumpFrequency] = useState(0);
   const [isWaterPumpRunning, setIsWaterPumpRunning] = useState(false);
   const [targetWaterPumpFrequency, setTargetWaterPumpFrequency] = useState(0);
-
-  // Add gauge configurations for different tabs
-  const gaugeConfigs = {
-    'Cutter Face VFD': [
-      { id: 'speed', label: 'Speed', value: speed, unit: 'RPM', maxValue: 2000 },
-      { id: 'flow-rate', label: 'Flow Rate', value: frequency, unit: 'GPM', maxValue: 100 },
-      { id: 'oil-temp', label: 'Oil Temperature', value: oilTemp, unit: '°C', maxValue: 150 },
-    ],
-    'Water Pump VFD': [
-      { id: 'voltage', label: 'Voltage', value: dcBusVoltage, unit: 'V', maxValue: 600 },
-      { id: 'current', label: 'Current', value: current, unit: 'A', maxValue: 100 },
-      { id: 'power', label: 'Power', value: power, unit: 'kW', maxValue: 100 },
-    ],
-  };
-
-  // Function to fetch speed from the API
-  const fetchSpeed = async () => {
-    try {
-      const response = await axios.get('http://127.0.0.1:8080/api/data/speed-dir'); // Adjust the endpoint as necessary
-      console.log("API Response for Speed:", response.data); // Log the response
-      if (response.data && response.data["Speed & Direction"] && response.data["Speed & Direction"].value) {
-        setSpeed(response.data["Speed & Direction"].value); // Update speed state
-      } else {
-        console.warn("Speed value not found in response:", response.data);
-      }
-    } catch (error) {
-      console.error("Error fetching speed:", error);
-    }
-  };
-
-  const renderGauges = () => {
-    console.log('Active Tab:', activeTab);
-    console.log('Available Configs:', Object.keys(gaugeConfigs));
-    const currentGauges = gaugeConfigs[activeTab] || [];
-    
-    return currentGauges.map((gauge) => (
-      <GaugeContainer key={gauge.id}>
-        <StyledGaugeChart
-          id={`${gauge.id}-gauge`}
-          nrOfLevels={20}
-          percent={Math.min(Math.max(gauge.value / gauge.maxValue, 0), 1)} // Normalize based on maxValue
-          arcWidth={0.3}
-          colors={["#0000FF", "#00FF00", "#FF0000"]}
-          formatTextValue={() => `${gauge.value} ${gauge.unit}`} // Display actual value with unit
-        />
-        <GaugeLabel>{gauge.label}: {gauge.value} {gauge.unit}</GaugeLabel>
-      </GaugeContainer>
-    ));
-  };
-
-  // Add useEffect to simulate some values
-  useEffect(() => {
-    // Simulate some values for testing
-    setDcBusVoltage(480);
-    setCurrent(10.9);
-    setPower(12);
-  }, []);
 
   // Add this to help debug
   useEffect(() => {

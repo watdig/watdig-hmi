@@ -18,10 +18,12 @@ def register_routes(router, runtime):
         runtime.modbus_client.write_register(0, [15], 2)
         runtime.modbus_client.write_register(0, [47], 2)
         runtime.modbus_client.write_register(0, [111], 2)
+        return jsonify({"status": "success", "message": "Startup sequence completed"})
 
     @router.route("/api/stop-motor", methods=["GET"])
     def stop_motor():
         runtime.modbus_client.write_register(0, [0], 2)
+        return jsonify({"status": "success", "message": "Motor stopped"})
 
     @router.route("/api/set-frequency", methods=["POST"])
     def set_frequency():
@@ -159,14 +161,17 @@ def register_routes(router, runtime):
         runtime.modbus_client.write_register(0, [15], 1)
         runtime.modbus_client.write_register(0, [47], 1)
         runtime.modbus_client.write_register(0, [111], 1)
+        return jsonify({"status": "success", "message": "Startup sequence completed"})
 
     @router.route("/api/wp/stop-motor", methods=["GET"])
     def stop_motor_wp():
         runtime.modbus_client.write_register(0, 0, 1)
+        return jsonify({"status": "success", "message": "Water pump stopped"})
 
     @router.route("/api/wp/reverse-motor", methods=["GET"])
     def reverse_motor_wp():
         runtime.modbus_client.write_register(0, 0, 1)
+        return jsonify({"status": "success", "message": "Water pump reversed"})
 
     @router.route("/api/wp/set-frequency", methods=["POST"])
     def set_frequency_wp():

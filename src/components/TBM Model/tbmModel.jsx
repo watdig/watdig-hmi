@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import TbmVisualization from "./TbmVisualization";
 import ControlPanel from "./ControlPanel";
 import SensorDataTable from "../Sensors/SensorDataTable";
@@ -12,10 +12,10 @@ import TbmStateBanner from "./TbmStateBanner";
 
 const TbmModel = () => {
   const {
-    powerOn, hbvStatus, movStatus, hmuStatus,
+    powerOn, hbvStatus,
     eStopTripped, eStopReason, resetEStop,
-    showPowerDialog, setShowPowerDialog,
-    showFrequencyDialog, setShowFrequencyDialog,
+    showPowerDialog,
+    showFrequencyDialog,
     dialogType, confirmPowerChange, confirmFrequencyChange
   } = useTbmState();
 

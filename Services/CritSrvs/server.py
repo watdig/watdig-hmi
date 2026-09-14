@@ -17,6 +17,7 @@ from flask_cors import CORS
 from Services.database_service import Database as db
 from Services.logger_service import info, error
 from Services.modbus_service import ModbusConnection
+from Services.modbus_values import register_value
 
 MAX_RETRIES = 3  # Maximum number of connection attempts
 
@@ -114,6 +115,7 @@ def handle_modbus_errors(f):
 
 
 def format_response(value, name, unit="", scale_factor=1):
+    value = register_value(value)
     return jsonify({name: {"value": value * scale_factor, "unit": unit}})
 
 

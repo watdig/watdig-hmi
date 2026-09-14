@@ -69,10 +69,6 @@ const TbmStateBanner = () => {
     hmuStatus,
     eStopTripped,
     eStopReason,
-    rpm,
-    cutterFaceFrequency,
-    waterPumpFrequency,
-    pressure,
     triggerEStop,
     setEStopReason,
     setPowerOn,
@@ -181,4 +177,4 @@ const TbmStateBanner = () => {
   );
 };
 
-export default TbmStateBanner; 
+export default TbmStateBanner;

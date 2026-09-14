@@ -2,6 +2,8 @@
 
 from flask import jsonify, request
 
+from Services.modbus_values import register_value, register_values
+
 
 def register_routes(router, runtime):
     @router.route("/rs485", methods=["GET"])
@@ -60,7 +62,9 @@ def register_routes(router, runtime):
         # Read the registers
         try:
             if range_val == 1:
-                value = runtime.modbus.read_register_holding(register, unit_id)
+                value = register_value(
+                    runtime.modbus.read_register_holding(register, unit_id)
+                )
                 runtime.info(f"Read register {register} from unit {unit_id}: {value}")
                 return jsonify(
                     {
@@ -71,8 +75,8 @@ def register_routes(router, runtime):
                     }
                 )
             else:
-                value = runtime.modbus.read_register_holding(
-                    register, unit_id, range_val
+                value = register_values(
+                    runtime.modbus.read_register_holding(register, unit_id, range_val)
                 )
 
                 runtime.info(
@@ -84,6 +88,7 @@ def register_routes(router, runtime):
                         "unitId": unit_id,
                         "startRegister": register,
                         "range": range_val,
+                        "value": value,
                     }
                 )
         except Exception as e:

@@ -35,9 +35,8 @@ jobs:
       - run: npm test -- --watchAll=false --runInBand
         env:
           CI: 'true'
-      - name: Lint refactored frontend modules
-        run: npx --no-install eslint 'src/components/TBM Model/state' 'src/components/TBM Model/TbmStateContext.jsx' src/services --max-warnings 0
+      - name: Lint frontend
+        run: npx --no-install eslint src --max-warnings 0
       - run: npm run build
         env:
-          # Existing warnings outside the refactored modules are documented in docs/refactoring.md.
-          CI: 'false'
+          CI: 'true'

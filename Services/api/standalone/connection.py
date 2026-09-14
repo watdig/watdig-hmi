@@ -3,6 +3,8 @@
 from flask import jsonify, request
 import traceback
 
+from Services.modbus_values import register_value
+
 
 def register_routes(router, runtime):
     @router.route("/read", methods=["GET"])
@@ -25,14 +27,18 @@ def register_routes(router, runtime):
                 # Read multiple registers
                 result = []
                 for i in range(range_size):
-                    value = runtime.modbus_client.read_register_holding(
-                        register + i, unit_id
+                    value = register_value(
+                        runtime.modbus_client.read_register_holding(
+                            register + i, unit_id
+                        )
                     )
                     result.append({"register": register + i, "value": value})
                 return jsonify(result)
             else:
                 # Read single register
-                value = runtime.modbus_client.read_register_holding(register, unit_id)
+                value = register_value(
+                    runtime.modbus_client.read_register_holding(register, unit_id)
+                )
                 return jsonify({"register": register, "value": value})
 
         except Exception as e:
@@ -44,11 +50,12 @@ def register_routes(router, runtime):
     @router.route("/write", methods=["POST"])
     def write_register():
         try:
-            unit_id = request.args.get("unitId", type=int)
-            register = request.args.get("register", type=int)
-            value = request.args.get("value", type=int)
-
-            if not all([isinstance(x, int) for x in [unit_id, register, value]]):
+            data = request.get_json(silent=True) or request.args
+            try:
+                unit_id = int(data.get("unitId"))
+                register = int(data.get("register"))
+                value = int(data.get("value"))
+            except (TypeError, ValueError):
                 return jsonify({"message": "Invalid parameters"}), 400
 
             if (

@@ -42,9 +42,9 @@ const Value = styled.span`
 `;
 
 const StateBanner = () => {
-    const [machineState, setMachineState] = useState('STOPPED');
-    const [currentSpeed, setCurrentSpeed] = useState(0);
-    const [currentFrequency, setCurrentFrequency] = useState(0);
+    const [machineState] = useState('STOPPED');
+    const [currentSpeed] = useState(0);
+    const [currentFrequency] = useState(0);
     useEffect(() => {
         // Example of how to fetch data
         const fetchData = async () => {

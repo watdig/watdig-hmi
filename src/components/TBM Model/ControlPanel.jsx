@@ -20,7 +20,7 @@ const ControlPanel = () => {
     handleCutterPopupHide, handleWaterPumpPopupShow,
     handleWaterPumpPopupHide, showCutterFrequencyHover,
     showWaterPumpFrequencyHover, updateFrequencyOnHover,
-    setHbvStatus, setPowerOn, setMovStatus, setHmuStatus
+    setHbvStatus, setPowerOn
   } = useTbmState();
   
   // State for power confirmation dialog
@@ -72,7 +72,7 @@ const ControlPanel = () => {
       console.log(`Stopping 120V polling`);
       clearInterval(interval120V);
     };
-  }, [pollActive]); // Only depend on pollActive, not hbvStatus
+  }, [pollActive, hbvStatus, setHbvStatus]);
 
   // When 120V power is toggled, also set 480V state accordingly
   useEffect(() => {
@@ -401,4 +401,4 @@ const ControlPanel = () => {
   );
 };
 
-export default ControlPanel; 
+export default ControlPanel;

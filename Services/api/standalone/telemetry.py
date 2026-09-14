@@ -2,6 +2,8 @@
 
 from flask import jsonify, request
 
+from Services.modbus_values import register_values
+
 
 def register_routes(router, runtime):
     @router.route("/api/data/speed-dir", methods=["GET"])
@@ -72,7 +74,7 @@ def register_routes(router, runtime):
     def get_mot_therm_stress():
         """Get motor thermal stress level"""
         mot_therm_stress = runtime.modbus_client.read_register_holding(152, 2)
-        return jsonify(mot_therm_stress)
+        return jsonify(register_values(mot_therm_stress))
 
     @router.route("/api/fault/latest-fault", methods=["GET"])
     @runtime.handle_modbus_errors

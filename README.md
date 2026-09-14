@@ -279,7 +279,39 @@ docker-compose down
 ## Development
 
 See [modular architecture and regression checks](docs/refactoring.md) for the
-route/state module boundaries, offline test commands, and preserved behavior.
+route/state module boundaries, offline test commands, corrected behavior, and
+remaining hardware verification limits.
+
+### Reliability fixes on the modularization branch
+
+- Motor startup, stop, and reverse routes now return explicit JSON success
+  responses after completing the same register writes. This prevents Flask from
+  converting otherwise successful control requests into HTTP 500 responses.
+- `Services/modbus_values.py` is the single conversion boundary for Modbus
+  responses. Holding/input reads now expose scalar values for one register and
+  lists for multi-register reads, while route helpers also accept pymodbus-style
+  response objects defensively.
+- Standalone `POST /write` accepts the frontend's JSON body. Query parameters
+  remain supported for compatibility with existing clients.
+- Unused React imports, state, helper functions, and styled components were
+  removed. Hook dependency warnings were corrected or documented where polling
+  intentionally captures its mount-time callbacks. CI now lints all of `src/`
+  with zero warnings and builds with `CI=true`.
+
+Run the complete offline verification suite with:
+
+```sh
+python3 -m venv .venv-test
+.venv-test/bin/python -m pip install -r requirements-test.txt
+.venv-test/bin/python -m pytest
+npm ci
+CI=true npm test -- --watchAll=false --runInBand
+npx --no-install eslint src --max-warnings 0
+CI=true npm run build
+```
+
+The backend suite prevents network and serial-device access. Real RS-485/MQTT
+operation still requires a hardware smoke test.
 
 ### Backend Development
 The backend uses:

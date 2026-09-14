@@ -3,10 +3,7 @@ import { useTbmState } from '../TBM Model/TbmStateContext';
 import axios from 'axios';
 
 const SensorDataTable = () => {
-  const { sensorData, loadSensors, setLoadSensors, oilTemperature, setOilTemperature, oilTempStatus, setOilTempStatus, oilPressure, setOilPressure, getColorForStatus, setSensorData, hbvStatus } = useTbmState();
-  
-  // Add initialization state
-  const [initializing, setInitializing] = useState(false);
+  const { sensorData, loadSensors, setLoadSensors, oilTemperature, setOilTemperature, oilTempStatus, setOilTempStatus, oilPressure, setOilPressure, getColorForStatus, setSensorData } = useTbmState();
   
   // Add state for power meter data
   const [powerData, setPowerData] = useState({
@@ -313,9 +310,6 @@ const SensorDataTable = () => {
     // Remove power dependency check - always start polling
     console.log('Starting sensor polling');
     
-    // No need for initialization state anymore
-    setInitializing(false);
-    
     // Start polling immediately without delay
     fetchAllSensorData();
     fetchPowerData();
@@ -334,6 +328,8 @@ const SensorDataTable = () => {
       clearInterval(encoderIntervalId);
     };
     
+    // These polling callbacks intentionally use the component's mount-time configuration.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - only runs once on mount
 
   // Fetch all sensor data
@@ -743,4 +739,4 @@ const SensorDataTable = () => {
   );
 };
 
-export default SensorDataTable; 
+export default SensorDataTable;

@@ -30,6 +30,27 @@ not enabled; they remain recoverable from Git history.
 simulation. `Test/pid_controller.py` re-exports the original classes for existing
 scripts. PID math, register values, write order, and delays are unchanged.
 
+### Follow-up reliability corrections
+
+The modularization branch now also corrects four concrete integration defects:
+
+- Startup, stop, and reverse handlers return `{ "status": "success", ... }`
+  after their existing writes, so successful requests no longer fall through to
+  Flask's missing-response HTTP 500.
+- `Services/modbus_values.py` converts raw pymodbus responses, lists, tuples, and
+  numeric fakes into a consistent application value. `ModbusConnection` returns
+  one number for a single-register read and a list for a multi-register read.
+  Telemetry, sensor, generic-read, and formatting paths defensively normalize
+  values at their HTTP boundary as well.
+- Standalone `POST /write` reads a JSON body first and falls back to query
+  parameters. Both forms are validated and converted to integers before writing.
+- The legacy multi-register read response now includes its normalized `value`
+  list instead of discarding the transport result.
+
+These are intentionally corrected contracts, not behavior-preserving refactors.
+The original register addresses, values, ordering, unit IDs, and startup delays
+remain unchanged.
+
 ## Frontend
 
 `TbmStateContext.jsx` remains the public provider and hook import path. It composes:
@@ -43,9 +64,11 @@ scripts. PID math, register values, write order, and delays are unchanged.
 - `src/services/modbusApi.js`: existing Axios requests and integer conversion.
 
 The context's public keys, initial state, URLs, intervals, scaling, and UI component
-markup are preserved. The unused private `updateStateFromModbus` function was
-removed; polling still does not apply its responses to UI state. Stable state
-setters are included in the extracted hooks' dependency arrays.
+markup are preserved. The unused private `updateStateFromModbus` function and
+other unreachable frontend helpers/imports/state were removed. Polling still does
+not apply its responses to UI state. Stable state setters are included in hook
+dependency arrays; the sensor poller documents its intentional mount-only
+lifecycle. The full `src/` tree now passes ESLint with zero warnings.
 
 ## Run offline tests
 
@@ -59,7 +82,8 @@ python3 -m venv .venv-test
 .venv-test/bin/python -m pytest
 npm ci
 CI=true npm test -- --watchAll=false --runInBand
-npm run build
+npx --no-install eslint src --max-warnings 0
+CI=true npm run build
 ```
 
 On Windows, use `.venv-test\Scripts\python.exe` and set `CI=true` using your shell.
@@ -67,9 +91,12 @@ On Windows, use `.venv-test\Scripts\python.exe` and set `CI=true` using your she
 hardware scripts and are not an automated offline suite.
 
 The backend fixture in `tests/fixtures/api_contract.json` contains 740 cases
-captured **before changing the implementation**. Tests compare status, body,
-ordered register operations, sleep calls, and PID state against these frozen
-results, plus assert that neither server's route set changes. Additional tests
+captured **before changing the implementation**. Tests compare unchanged status,
+body, ordered register operations, sleep calls, and PID state against these frozen
+results, plus assert that neither server's route set changes. Captured cases whose
+old result represents one of the corrected defects are explicitly excluded and
+replaced by focused success tests for motor responses, response-object conversion,
+multi-register values, JSON writes, and sensor/telemetry output. Additional tests
 exercise PID math and one control-loop iteration. Serial connections and network
 access are prohibited in the tests. Devices, background threads, and operational
 database reads are replaced with fakes.
@@ -80,25 +107,20 @@ timers, simulation values, register requests, error propagation, and polling.
 Four snapshots were captured against the original provider and retained unchanged.
 Do not refresh fixtures/snapshots merely to make a refactor pass.
 
-CI runs backend tests on Python 3.10 and 3.13, React tests, lint with zero warnings
-for the extracted frontend modules, and the production frontend build.
+CI runs backend tests on Python 3.10 and 3.13, React tests, full frontend lint with
+zero warnings, and the production frontend build with warnings treated as errors.
 
-## Existing behavior and verification limits
+## Remaining verification limits
 
-These checks establish behavioral parity, not that all existing functionality is
-correct. Existing mismatches deliberately retained include:
+The four documented route/transport/lint issues are resolved. Remaining limits
+and pre-existing behavior include:
 
-- Several start/stop routes perform writes but return no Flask response, yielding
-  HTTP 500. Tests preserve the register sequence as well as that response.
-- Some routes expect a numeric value while the transport returns a register
-  response object. The fixture covers both numeric and object responses.
-- Standalone `/write` accepts query parameters, while the context sends JSON.
 - The legacy server sets its connection flag without calling `initialize()`;
   the refactor does not change connection policy.
-- The existing frontend has unused-variable and effect-dependency warnings outside
-  the refactored modules. Existing SQLAlchemy and React test-library deprecation
-  warnings also remain. Production builds still succeed; CI does not promote
-  these pre-existing build warnings to failures.
+- SQLAlchemy emits a `declarative_base()` deprecation warning and React's test
+  utilities emit an `act` deprecation warning. The Create React App dependency
+  stack can also report stale Browserslist data and an undeclared Babel plugin;
+  these are dependency-maintenance notices rather than application lint warnings.
 
 Physical RS-485 devices, MQTT availability, wiring, and deployed controller
 behavior require a hardware smoke test. No real control writes were performed.

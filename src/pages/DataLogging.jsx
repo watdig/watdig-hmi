@@ -47,20 +47,6 @@ const Td = styled.td`
   white-space: nowrap;
 `;
 
-const TabButton = styled.button`
-  padding: 8px 16px;
-  margin: 0 8px;
-  background-color: ${props => props.active ? '#333' : '#666'};
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-
-  &:hover {
-    background-color: #444;
-  }
-`;
-
 const RefreshButton = styled.button`
   padding: 8px 16px;
   margin: 1rem;
@@ -108,9 +94,7 @@ const ControlsContainer = styled.div`
 `;
 
 const DataLogging = () => {
-  const [activeTable, setActiveTable] = useState('operating');
   const [operatingData, setOperatingData] = useState([]);
-  const [faultData, setFaultData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [manualRefresh, setManualRefresh] = useState(false);
   const [filters, setFilters] = useState({});
@@ -180,8 +164,6 @@ const DataLogging = () => {
   };
 
   const totalOperatingRows = operatingData.length;
-  const totalFaultRows = faultData.length;
-
   const renderOperatingTable = () => {
     const filteredData = applyFilters(operatingData);
     const sortedData = applySorting(filteredData);
@@ -292,4 +274,4 @@ const DataLogging = () => {
   );
 };
 
-export default DataLogging; 
+export default DataLogging;

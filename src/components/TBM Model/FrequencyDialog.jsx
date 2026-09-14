@@ -80,17 +80,6 @@ const FrequencyDialog = () => {
     }
   };
 
-  const stopMotor = async (motorType) => {
-    if (motorType === 'cutterface') {
-      return stopCutterFaceMotor();
-    } else if (motorType === 'waterpump') {
-      return stopWaterPumpMotor();
-    } else {
-      console.error('Invalid motor type:', motorType);
-      return { success: false, error: 'Invalid motor type' };
-    }
-  };
-
   const setFrequency = async (motorType, frequency) => {
     if (motorType === 'cutterface') {
       return setCutterFaceFrequency(frequency);
@@ -111,17 +100,6 @@ const FrequencyDialog = () => {
       return { success: true, data: response.data };
     } catch (error) {
       console.error('Error starting cutter face motor:', error);
-      return { success: false, error };
-    }
-  };
-
-  const stopCutterFaceMotor = async () => {
-    try {
-      const response = await axios.get("http://127.0.0.1:5000/api/stop-motor");
-      console.log('Cutter face motor stopped:', response.data);
-      return { success: true, data: response.data };
-    } catch (error) {
-      console.error('Error stopping cutter face motor:', error);
       return { success: false, error };
     }
   };
@@ -149,17 +127,6 @@ const FrequencyDialog = () => {
       return { success: true, data: response.data };
     } catch (error) {
       console.error('Error starting water pump motor:', error);
-      return { success: false, error };
-    }
-  };
-
-  const stopWaterPumpMotor = async () => {
-    try {
-      const response = await axios.get("http://127.0.0.1:5000/api/wp/stop-motor");
-      console.log('Water pump motor stopped:', response.data);
-      return { success: true, data: response.data };
-    } catch (error) {
-      console.error('Error stopping water pump motor:', error);
       return { success: false, error };
     }
   };
@@ -258,4 +225,4 @@ const FrequencyDialog = () => {
   );
 };
 
-export default FrequencyDialog; 
+export default FrequencyDialog;

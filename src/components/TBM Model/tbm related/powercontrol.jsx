@@ -15,8 +15,8 @@ import { Box, FormControl, FormLabel, RadioGroup, FormControlLabel, TextField, I
 import { waterPumpSimulation } from "../../../utils/PIDSimulation";
 
 const PowerControl = () => {
-    const [state480, setState480] = useState(false)
-    const [state120, setState120] = useState(false)
+    const [, setState480] = useState(false)
+    const [, setState120] = useState(false)
     const [HPUstate, setHPUState] = useState(false)
     const [controlMode, setControlMode] = useState('manual');
     const [targetPressure, setTargetPressure] = useState(72.5);
@@ -75,7 +75,7 @@ const PowerControl = () => {
         if (!HPUstate && pidRunning) {
             stopPIDControl();
         }
-    }, [HPUstate]);
+    }, [HPUstate, pidRunning]);
 
     const handlePIDControl = () => {
         if (!HPUstate) {
@@ -256,4 +256,4 @@ const PowerControl = () => {
     );
 }
 
-export default PowerControl; 
+export default PowerControl;

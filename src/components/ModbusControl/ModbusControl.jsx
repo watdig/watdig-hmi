@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useTbmState } from '../TBM Model/TbmStateContext';
 import { 
   CircularProgress, 
   Snackbar, 
@@ -22,8 +21,6 @@ const ModbusControl = () => {
     message: '',
     severity: 'success'
   });
-  const { modbusStatus } = useTbmState();
-
   // Check Modbus connection status on component mount
   useEffect(() => {
     checkModbusStatus();
@@ -412,4 +409,4 @@ const ModbusControl = () => {
   );
 };
 
-export default ModbusControl; 
+export default ModbusControl;

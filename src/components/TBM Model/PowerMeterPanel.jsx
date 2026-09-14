@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useTbmState } from './TbmStateContext';
-import axios from 'axios';
 
 const PowerMeterPanel = () => {
   const { getColorForStatus } = useTbmState();
@@ -154,27 +153,6 @@ const PowerMeterPanel = () => {
     }
   };
 
-  // Function to determine power meter status based on value
-  const getPowerStatus = (name, value) => {
-    if (value === null) return 'error';
-    
-    // Define thresholds for different measurements
-    const thresholds = {
-      v1n: { warning: 500, critical: 550 }, // Adjust these thresholds as needed
-      v2n: { warning: 500, critical: 550 },
-      v3n: { warning: 500, critical: 550 },
-      i1: { warning: 80, critical: 100 },
-      i2: { warning: 80, critical: 100 }
-    };
-    
-    const threshold = thresholds[name];
-    if (!threshold) return 'normal';
-    
-    if (value >= threshold.critical) return 'critical';
-    if (value >= threshold.warning) return 'warning';
-    return 'normal';
-  };
-
   // Poll the API endpoints
   useEffect(() => {
     const fetchPowerData = async () => {
@@ -298,4 +276,4 @@ const PowerMeterPanel = () => {
   );
 };
 
-export default PowerMeterPanel; 
+export default PowerMeterPanel;

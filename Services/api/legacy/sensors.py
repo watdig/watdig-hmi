@@ -2,66 +2,72 @@
 
 from flask import jsonify, request
 
+from Services.modbus_values import register_value
+
+
+def _read_sensor(runtime, register, unit_id):
+    return register_value(runtime.modbus.read_register_holding(register, unit_id))
+
 
 def register_routes(router, runtime):
     @router.route("/api/bg/get-thrustTop", methods=["GET"])
     def get_thrustTop():
-        value = runtime.modbus.read_register_holding(9, 5)
-        return value
+        value = _read_sensor(runtime, 9, 5)
+        return jsonify(value)
 
     @router.route("/api/bg/get-thrustLeft", methods=["GET"])
     def get_thrustLeft():
-        value = runtime.modbus.read_register_holding(10, 5)
+        value = _read_sensor(runtime, 10, 5)
         return jsonify(value)
 
     @router.route("/api/bg/get-thrustRight", methods=["GET"])
     def get_thrustRight():
-        value = runtime.modbus.read_register_holding(11, 5)
+        value = _read_sensor(runtime, 11, 5)
         return jsonify(value)
 
     @router.route("/api/bg/motor-temp", methods=["GET"])
     def get_motor_temp():
-        value = runtime.modbus.read_register_holding(12, 5)
+        value = _read_sensor(runtime, 12, 5)
         return jsonify(value)
 
     @router.route("/api/bg/earth-preassure", methods=["GET"])
     def get_earth_pressure():
-        value = runtime.modbus.read_register_holding(13, 5)
+        value = _read_sensor(runtime, 13, 5)
         return jsonify(value)
 
     @router.route("/api/bg/flame", methods=["GET"])
     def get_flame():
-        value = runtime.modbus.read_register_holding(14, 5)
+        value = _read_sensor(runtime, 14, 5)
         return jsonify(value)
 
     @router.route("/api/bg/actuator-A", methods=["GET"])
     def get_actuator_a():
-        value = runtime.modbus.read_register_holding(15, 5)
+        value = _read_sensor(runtime, 15, 5)
         return jsonify(value)
 
     @router.route("/api/bg/actuator-B", methods=["GET"])
     def get_actuator_b():
-        value = runtime.modbus.read_register_holding(16, 5)
+        value = _read_sensor(runtime, 16, 5)
         return jsonify(value)
 
     @router.route("/api/bg/actuator-C", methods=["GET"])
     def get_actuator_c():
-        value = runtime.modbus.read_register_holding(17, 5)
+        value = _read_sensor(runtime, 17, 5)
         return jsonify(value)
 
     @router.route("/api/bg/encoder-speed", methods=["GET"])
     def get_encoder_speed():
-        value = runtime.modbus.read_register_holding(62, 5)
-        return value
+        value = _read_sensor(runtime, 62, 5)
+        return jsonify(value)
 
     @router.route("/api/ag/oil-preassure", methods=["GET"])
     def get_oil_pressure():
-        value = runtime.modbus.read_register_holding(12, 6)
+        value = _read_sensor(runtime, 12, 6)
         return jsonify(value)
 
     @router.route("/api/ag/oil-temp", methods=["GET"])
     def get_oil_temp():
-        value = runtime.modbus.read_register_holding(10, 6)
+        value = _read_sensor(runtime, 10, 6)
         return jsonify(value)
 
     return {

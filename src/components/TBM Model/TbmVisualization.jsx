@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { useTbmState } from "./TbmStateContext";
 import JackingFrame from "./JackingFrame";
 import HpuControls from './HpuControls';
@@ -399,4 +399,4 @@ const TbmVisualization = () => {
   );
 };
 
-export default TbmVisualization; 
+export default TbmVisualization;
